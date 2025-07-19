@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Test XML file for SAX parser -->
+<bookstore xmlns="http://example.com/books">
+</bookstore>

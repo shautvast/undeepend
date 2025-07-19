@@ -16,6 +16,7 @@ mod tests {
 
     #[test]
     fn test_xml_header() {
+        initialize();
         let test_xml = include_str!("test/header.xml");
         let mut testhandler = TestHandler::new();
         parse_string(test_xml.to_string(), Box::new(&mut testhandler))
@@ -58,6 +59,20 @@ mod tests {
         assert!(testhandler.start_element_called);
         assert!(!testhandler.elements.is_empty());
         assert_eq!(testhandler.elements[0], r#"<element a="1">"#);
+        assert!(testhandler.end_element_called);
+        assert!(testhandler.end_document_called);
+    }
+
+    #[test]
+    fn test_ignore_comment() {
+        let test_xml = include_str!("test/comment.xml");
+        let mut testhandler = TestHandler::new();
+        parse_string(test_xml.to_string(), Box::new(&mut testhandler))
+            .expect("Failed to parse test xml");
+        assert!(testhandler.start_document_called);
+        assert!(testhandler.start_element_called);
+        assert!(!testhandler.elements.is_empty());
+        assert_eq!(testhandler.elements[0], r#"<bookstore xmlns="http://example.com/books">"#);
         assert!(testhandler.end_element_called);
         assert!(testhandler.end_document_called);
     }

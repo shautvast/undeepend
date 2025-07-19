@@ -5,7 +5,7 @@ mod debug;
 #[derive(Debug)]
 pub struct Attribute {
     name: String,
-    namespace: Option<String>,
+    _namespace: Option<String>,
     value: String,
 }
 
