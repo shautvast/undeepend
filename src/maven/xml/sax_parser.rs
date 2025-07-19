@@ -33,14 +33,17 @@ impl<'a> SAXParser<'a> {
     }
 
     fn parse_elements(&mut self) -> anyhow::Result<()> {
-        if self.current == '<' {
-            self.advance()?;
-            if self.next_char()? != '/' {
-                self.parse_start_element()?;
-            } else {
-                self.parse_end_element()?;
+        while self.position < self.xml.len() {
+            if self.current == '<' {
+                self.advance()?;
+                if self.current != '/' {
+                    self.parse_start_element()?;
+                } else {
+                    self.parse_end_element()?;
+                }
             }
         }
+        self.handler.end_document();
         Ok(())
     }
 
@@ -55,6 +58,8 @@ impl<'a> SAXParser<'a> {
         }
 
         self.handler.start_element("", name.as_str(), "", atts);
+        self.skip_whitespace()?;
+        self.expect_char('>')?;
         Ok(())
     }
 

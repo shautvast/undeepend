@@ -58,6 +58,8 @@ mod tests {
         assert!(testhandler.start_element_called);
         assert!(!testhandler.elements.is_empty());
         assert_eq!(testhandler.elements[0], r#"<element a="1">"#);
+        assert!(testhandler.end_element_called);
+        assert!(testhandler.end_document_called);
     }
 }
 
