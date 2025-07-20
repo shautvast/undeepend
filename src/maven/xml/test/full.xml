@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Test XML file for SAX parser -->
+<bookstore xmlns="http://example.com/books">
+    <book id="1" category="fiction">
+        <title lang="en">The Great Gatsby</title>
+        <author>F. Scott Fitzgerald</author>
+        <price currency="USD">12.99</price>
+        <description>A classic American novel about the Jazz Age</description>
+    </book>
+    <book id="2" category="science">
+        <title lang="en">A Brief History of Time</title>
+        <author>Stephen Hawking</author>
+        <price currency="USD">15.50</price>
+        <description>An exploration of space &amp; time</description>
+        <chapters>
+            <chapter number="1">Our Picture of the Universe</chapter>
+            <chapter number="2">Space and Time</chapter>
+        </chapters>
+    </book>
+    <metadata>
+        <created>2024-01-15</created>
+        <lastModified>2024-01-20</lastModified>
+    </metadata>
+</bookstore>

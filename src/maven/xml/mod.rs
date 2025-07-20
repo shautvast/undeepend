@@ -5,7 +5,7 @@ mod debug;
 #[derive(Debug)]
 pub struct Attribute {
     name: String,
-    _namespace: Option<String>,
+    namespace: Option<String>,
     value: String,
 }
 
@@ -16,12 +16,12 @@ pub trait SaxHandler {
     fn end_prefix_mapping(&mut self, prefix: &str, uri: &str);
     fn start_element(
         &mut self,
-        uri: &str,
+        uri: Option<String>,
         local_name: &str,
         qualified_name: &str,
         attributes: Vec<Attribute>,
     );
-    fn end_element(&mut self, uri: &str, local_name: &str, qualified_name: &str);
+    fn end_element(&mut self, uri: Option<String>, local_name: &str, qualified_name: &str);
     fn characters(&mut self, chars: &[char]);
     fn error(&mut self, error: &str);
 }

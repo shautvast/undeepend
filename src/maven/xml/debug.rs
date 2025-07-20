@@ -18,14 +18,14 @@ impl SaxHandler for DebugHandler {
     }
     fn start_element(
         &mut self,
-        _uri: &str,
+        _uri: Option<String>,
         local_name: &str,
         _qualified_name: &str,
         attributes: Vec<crate::maven::xml::Attribute>,
     ) {
         debug!("start_element {}, {:?}", local_name, attributes);
     }
-    fn end_element(&mut self, _uri: &str, local_name: &str, _qualified_name: &str) {
+    fn end_element(&mut self, _uri: Option<String>, local_name: &str, _qualified_name: &str) {
         debug!("end_element {} ", local_name);
     }
     fn characters(&mut self, chars: &[char]) {

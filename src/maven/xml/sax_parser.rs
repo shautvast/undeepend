@@ -10,6 +10,7 @@ struct SAXParser<'a> {
     handler: Box<&'a mut dyn SaxHandler>,
     position: usize,
     current: char,
+    namespace_stack: Vec<(String, isize)>,
 }
 
 impl<'a> SAXParser<'a> {
@@ -19,6 +20,7 @@ impl<'a> SAXParser<'a> {
             handler,
             position: 0,
             current: '\0',
+            namespace_stack: Vec::new(),
         }
     }
 
@@ -74,19 +76,31 @@ impl<'a> SAXParser<'a> {
     }
 
     fn parse_start_element(&mut self) -> anyhow::Result<()> {
-        let name = self.read_until(" />")?;
+        let name = self.read_until(" \t\n/>")?;
         let mut atts = vec![];
         let mut c = self.current;
-        while c == ' ' {
+
+        while c.is_whitespace() {
             self.skip_whitespace()?;
             atts.push(self.parse_attribute()?);
             c = self.advance()?;
         }
 
-        self.handler.start_element("", name.as_str(), "", atts);
+        let namespace = if !self.namespace_stack.is_empty() {
+            let (name, count) = self.namespace_stack.pop().unwrap();
+            self.namespace_stack.push((name.clone(), count + 1));
+            Some(name.clone())
+        } else {
+            None
+        };
+
+        self.handler
+            .start_element(namespace.clone(), name.as_str(), "", atts);
         self.skip_whitespace()?;
         if self.current == '/' {
             self.advance()?;
+            let namespace = self.pop_namespace();
+            self.handler.end_element(namespace, name.as_str(), "");
         }
         self.expect_char('>')?;
         self.skip_whitespace()?;
@@ -100,9 +114,16 @@ impl<'a> SAXParser<'a> {
         self.expect("\"", "Expected start of attribute value")?;
         let att_value = self.read_until("\"")?;
 
+        let namespace = if att_name == "xmlns" {
+            self.namespace_stack.push((att_value.clone(), -1));
+            Some(att_value.clone())
+        } else {
+            None
+        };
+
         Ok(Attribute {
             name: att_name.trim().to_string(),
-            _namespace: Some("".to_string()),
+            namespace,
             value: att_value,
         })
     }
@@ -110,9 +131,30 @@ impl<'a> SAXParser<'a> {
     fn parse_end_element(&mut self) -> anyhow::Result<()> {
         self.advance()?;
         let name = self.read_until(">")?;
-        self.handler.end_element("", name.as_str(), "");
+
+        let namespace = self.pop_namespace();
+
+        self.handler.end_element(namespace, name.as_str(), "");
+
         self.expect(">", "Expect end of element")?;
+        self.skip_whitespace()?;
         Ok(())
+    }
+
+    fn pop_namespace(&mut self) -> Option<String> {
+        let namespace = if !self.namespace_stack.is_empty() {
+            let (name, count) = self.namespace_stack.pop().unwrap();
+
+            if count > 0 {
+                self.namespace_stack.push((name.to_string(), count - 1));
+                Some(name)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        namespace
     }
 
     fn read_until(&mut self, until: &str) -> anyhow::Result<String> {
