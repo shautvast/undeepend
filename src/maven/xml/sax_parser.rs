@@ -1,6 +1,7 @@
-use crate::maven::xml::{Attribute, SaxHandler};
+use crate::maven::xml::{Attribute, SaxError, SaxHandler};
+use anyhow::anyhow;
 
-pub fn parse_string(xml: String, handler: Box<&mut dyn SaxHandler>) -> anyhow::Result<()> {
+pub fn parse_string(xml: String, handler: Box<&mut dyn SaxHandler>) -> Result<(), SaxError> {
     let mut parser = SAXParser::new(xml, handler);
     parser.parse()
 }
@@ -24,7 +25,7 @@ impl<'a> SAXParser<'a> {
         }
     }
 
-    fn parse(&mut self) -> anyhow::Result<()> {
+    fn parse(&mut self) -> Result<(), SaxError> {
         self.advance()?;
         self.expect(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
@@ -35,7 +36,7 @@ impl<'a> SAXParser<'a> {
         self.parse_elements()
     }
 
-    fn parse_elements(&mut self) -> anyhow::Result<()> {
+    fn parse_elements(&mut self) -> Result<(), SaxError>  {
         while self.position < self.xml.len() {
             if self.current == '<' {
                 self.advance()?;
@@ -52,7 +53,7 @@ impl<'a> SAXParser<'a> {
         Ok(())
     }
 
-    fn skip_comment(&mut self) -> anyhow::Result<()> {
+    fn skip_comment(&mut self) -> Result<(), SaxError> {
         self.expect("!--", "Expect comment start")?;
         let mut c = self.current;
         let mut end_in_sight = 0;
@@ -64,8 +65,11 @@ impl<'a> SAXParser<'a> {
                 '>' if end_in_sight == 2 => {
                     end_in_sight += 1;
                 }
+                _ if end_in_sight == 2 => {
+                    return Err(SaxError::BadCharacter);
+                }
                 _ if end_in_sight > 0 => {
-                    end_in_sight -= 0;
+                    end_in_sight = 0;
                 }
                 _ => {}
             }
@@ -75,7 +79,7 @@ impl<'a> SAXParser<'a> {
         Ok(())
     }
 
-    fn parse_start_element(&mut self) -> anyhow::Result<()> {
+    fn parse_start_element(&mut self) -> Result<(), SaxError> {
         let name = self.read_until(" \t\n/>")?;
         let mut atts = vec![];
         let mut c = self.current;
@@ -107,7 +111,7 @@ impl<'a> SAXParser<'a> {
         Ok(())
     }
 
-    fn parse_attribute(&mut self) -> anyhow::Result<Attribute> {
+    fn parse_attribute(&mut self) -> Result<Attribute, SaxError> {
         let att_name = self.read_until("=")?;
         self.skip_whitespace()?;
         self.expect("=", "Expected =")?;
@@ -128,7 +132,7 @@ impl<'a> SAXParser<'a> {
         })
     }
 
-    fn parse_end_element(&mut self) -> anyhow::Result<()> {
+    fn parse_end_element(&mut self) -> Result<(), SaxError> {
         self.advance()?;
         let name = self.read_until(">")?;
 
@@ -157,13 +161,13 @@ impl<'a> SAXParser<'a> {
         namespace
     }
 
-    fn read_until(&mut self, until: &str) -> anyhow::Result<String> {
+    fn read_until(&mut self, until: &str) -> Result<String, SaxError> {
         let start = self.position;
         let mut c = self.current;
         let until = until.chars().collect::<Vec<char>>();
         while !until.contains(&c) {
             if self.position > self.xml.len() {
-                return Err(anyhow::anyhow!("End reached while expecting {:?}", until));
+                return Err(SaxError::UnexpectedEof);
             }
             c = self.advance()?;
         }
@@ -172,7 +176,7 @@ impl<'a> SAXParser<'a> {
             .collect::<String>())
     }
 
-    fn skip_whitespace(&mut self) -> anyhow::Result<()> {
+    fn skip_whitespace(&mut self) -> Result<(), SaxError> {
         let mut c = self.current;
         while (c.is_whitespace()) && self.position < self.xml.len() {
             c = self.advance()?;
@@ -180,12 +184,9 @@ impl<'a> SAXParser<'a> {
         Ok(())
     }
 
-    fn advance(&mut self) -> anyhow::Result<char> {
+    fn advance(&mut self) -> Result<char, SaxError> {
         if self.position > self.xml.len() {
-            return Err(anyhow::anyhow!(
-                "End reached while expecting {:?}",
-                self.current
-            ));
+            return Err(SaxError::UnexpectedEof);
         }
         self.position += 1;
         self.current = if self.position <= self.xml.len() {
@@ -196,16 +197,16 @@ impl<'a> SAXParser<'a> {
         Ok(self.current)
     }
 
-    fn expect(&mut self, expected: &str, message: &str) -> anyhow::Result<()> {
+    fn expect(&mut self, expected: &str, message: &str) -> Result<(), SaxError> {
         for c in expected.chars() {
             if !self.expect_char(c)? {
-                return Err(anyhow::anyhow!(message.to_string()));
+                return Err(SaxError::UnexpectedCharacter(message.to_string()))
             }
         }
         Ok(())
     }
 
-    fn expect_char(&mut self, expected: char) -> anyhow::Result<bool> {
+    fn expect_char(&mut self, expected: char) -> Result<bool, SaxError> {
         if self.position > self.xml.len() {
             return Ok(false);
         }

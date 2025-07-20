@@ -1,9 +1,10 @@
-use crate::maven::xml::{Attribute, SaxHandler};
+use crate::maven::xml::{Attribute, SaxHandler, SaxError};
 
 #[cfg(test)]
 mod tests {
     use crate::maven::xml::sax_parser::parse_string;
     use crate::maven::xml::sax_parser_test::TestHandler;
+    use crate::maven::xml::SaxError;
 
     #[test]
     fn test_xml_header() {
@@ -71,6 +72,17 @@ mod tests {
         );
         assert_eq!(testhandler.end_element_called, 1);
         assert_eq!(testhandler.end_document_called, 1);
+    }
+
+    #[test]
+    fn test_bad_comment() {
+        let test_xml = include_str!("test/illegal_dashes_comment.xml");
+        let mut testhandler = TestHandler::new();
+        match parse_string(test_xml.to_string(), Box::new(&mut testhandler)){
+            Err(e)=> assert_eq!(e, SaxError::BadCharacter),
+            Ok(_) => assert!(false),
+        }
+
     }
 
     #[test]

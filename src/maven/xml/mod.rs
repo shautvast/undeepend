@@ -26,3 +26,23 @@ pub trait SaxHandler {
     fn error(&mut self, error: &str);
 }
 
+use std::fmt;
+
+#[derive(Debug, PartialEq)]
+pub enum SaxError {
+    BadCharacter,
+    UnexpectedEof,
+    UnexpectedCharacter(String),
+}
+
+impl fmt::Display for SaxError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            SaxError::BadCharacter => write!(f, "Bad character"),
+            SaxError::UnexpectedEof => write!(f, "Unexpected end of document"),
+            SaxError::UnexpectedCharacter(c) => write!(f, "Unexpected character {}",c),
+        }
+    }
+}
+
+impl std::error::Error for SaxError {}
