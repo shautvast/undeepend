@@ -2,122 +2,46 @@
 /// These structs is directly modelled after the XML because that is what strong-xml plugin requires
 #[derive(PartialEq, Debug)]
 pub struct Pom {
-    pub(crate) model_version: ModelVersion,
     pub(crate) parent: Option<Parent>,
-    pub(crate) group_id: Option<GroupId>,
-    pub(crate) artifact_id: ArtifactId,
-    pub(crate) version: Option<Version>,
-    pub(crate) name: Name,
-    pub(crate) packaging: Option<Packaging>,
-    pub(crate) url: Option<Url>,
-    pub(crate) description: Description,
-    pub(crate) licences: Option<Licenses>,
-    pub(crate) scm: Option<Scm>,
-    pub(crate) developers: Option<Developers>,
-    pub(crate) dependencies: Option<Dependencies>,
-    pub(crate) dependency_management: Option<DependencyManagement>,
+    pub(crate) group_id: Option<String>,
+    pub(crate) artifact_id: String,
+    pub(crate) version: Option<String>,
+    pub(crate) name: String,
+    pub(crate) packaging: Option<String>,
+    pub(crate) url: Option<String>,
+    pub(crate) dependencies: Vec<Dependency>,
+    pub(crate) dependency_management: Vec<Dependency>,
 }
 
-#[derive(PartialEq, Debug)]
-pub struct ModelVersion {
-    pub value: String,
-}
+impl Pom {
 
-#[derive(PartialEq, Debug, Clone)]
-pub struct GroupId {
-    pub(crate) value: String,
-}
-
-#[derive(PartialEq, Debug, Clone)]
-pub struct ArtifactId {
-    pub(crate) value: String,
-}
-
-#[derive(PartialEq, Debug, Clone)]
-pub struct Version {
-    pub(crate) value: String,
-}
-
-#[derive(PartialEq, Debug)]
-pub struct Name {
-    pub(crate) value: String,
-}
-
-#[derive(PartialEq, Debug)]
-pub struct Id {
-    pub(crate) value: String,
-}
-
-#[derive(PartialEq, Debug)]
-pub struct Packaging {
-    pub(crate) value: String,
-}
-
-#[derive(PartialEq, Debug)]
-pub struct Url {
-    pub(crate) value: String,
-}
-
-#[derive(PartialEq, Debug)]
-pub struct Description {
-    pub(crate) value: String,
-}
-
-#[derive(PartialEq, Debug)]
-pub struct Licenses {
-    pub(crate) licenses: Vec<License>,
-}
-
-#[derive(PartialEq, Debug)]
-pub struct Distribution {
-    pub(crate) value: String,
 }
 
 #[derive(PartialEq, Debug)]
 pub struct License {
-    pub(crate) name: Name,
-    pub(crate) url: Url,
-    pub(crate) distribution: Option<Distribution>,
+    pub(crate) name: String,
+    pub(crate) url: String,
+    pub(crate) distribution: Option<String>,
 }
 
 #[derive(PartialEq, Debug)]
 pub struct Parent {
-    pub(crate) group_id: GroupId,
-    pub(crate) artifact_id: ArtifactId,
-    pub(crate) version: Version,
+    pub(crate) group_id: String,
+    pub(crate) artifact_id: String,
+    pub(crate) version: String,
 }
 
 #[derive(PartialEq, Debug)]
-pub struct Scm {
-    pub(crate) url: Url,
-}
-
-#[derive(PartialEq, Debug)]
-pub struct Developers {
-    pub(crate) developers: Vec<Developer>,
-}
-
-#[derive(PartialEq, Debug)]
-struct Developer {
-    pub(crate) id: Option<Id>,
-    pub(crate) name: Name,
-}
-
-#[derive(PartialEq, Debug, Clone)]
-pub struct Dependencies {
-    pub(crate) value: Vec<Dependency>,
-}
-
-#[derive(PartialEq, Debug, Clone)]
-pub struct DependencyManagement {
-    pub(crate) value: Dependencies,
+pub struct Developer {
+    pub(crate) id: Option<String>,
+    pub(crate) name: String,
 }
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Dependency {
-    pub(crate) group_id: GroupId,
-    pub(crate) artifact_id: ArtifactId,
-    pub(crate) version: Option<Version>,
+    pub(crate) group_id: String,
+    pub(crate) artifact_id: String,
+    pub(crate) version: Option<String>,
 }
 
 #[cfg(test)]
@@ -126,7 +50,5 @@ mod test {
     use crate::maven::pom::Pom;
 
     #[test]
-    fn parse_should_not_fail() {
-
-    }
+    fn parse_should_not_fail() {}
 }

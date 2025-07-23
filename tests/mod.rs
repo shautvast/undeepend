@@ -1,1 +1,2 @@
 mod xml;
+mod pom;

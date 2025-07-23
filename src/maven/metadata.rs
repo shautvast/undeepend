@@ -1,12 +1,10 @@
-use crate::maven::pom::{ArtifactId, GroupId, Version};
-
 /// The Maven variant to parse poms
 /// These structs is directly modelled after the XML because that is what strong-xml plugin requires
 #[derive(PartialEq, Debug)]
 pub struct Metadata {
-    pub group_id: GroupId,
-    pub artifact_id: ArtifactId,
-    pub version: Version,
+    pub group_id: String,
+    pub artifact_id: String,
+    pub version: String,
     pub versioning: Versioning,
 }
 

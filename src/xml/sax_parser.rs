@@ -1,7 +1,7 @@
 use crate::xml::{Attribute, SaxError, SaxHandler};
 use std::collections::HashMap;
 
-pub fn parse_string(xml: String, handler: Box<&mut dyn SaxHandler>) -> Result<(), SaxError> {
+pub fn parse_string(xml: &str, handler: Box<&mut dyn SaxHandler>) -> Result<(), SaxError> {
     SAXParser::new(xml, handler).parse()
 }
 
@@ -16,7 +16,7 @@ pub struct SAXParser<'a> {
 }
 
 impl<'a> SAXParser<'a> {
-    pub fn new(xml: String, handler: Box<&'a mut dyn SaxHandler>) -> Self {
+    pub fn new(xml: &str, handler: Box<&'a mut dyn SaxHandler>) -> Self {
         Self {
             xml: xml.chars().collect(),
             handler,

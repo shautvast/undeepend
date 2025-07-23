@@ -1,7 +1,3 @@
-use regex::Regex;
-
-use crate::maven::pom::{Dependency, Parent, Pom};
-
 /// offers a (non-mutable) view on the pom-as-xml-representation
 /// the main use of this is that it resolves the parent information when needed
 ///
