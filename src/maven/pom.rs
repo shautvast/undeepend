@@ -13,10 +13,6 @@ pub struct Pom {
     pub(crate) dependency_management: Vec<Dependency>,
 }
 
-impl Pom {
-
-}
-
 #[derive(PartialEq, Debug)]
 pub struct License {
     pub(crate) name: String,
