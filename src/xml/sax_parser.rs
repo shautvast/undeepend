@@ -110,7 +110,7 @@ impl<'a> SAXParser<'a> {
             (None, qname)
         };
 
-        let qualified_name = if let Some(namespace) = &namespace{
+        let qualified_name = if let Some(namespace) = &namespace {
             &format!("{}:{}", namespace.clone(), &lname)
         } else {
             &lname
@@ -123,7 +123,8 @@ impl<'a> SAXParser<'a> {
         if self.current == '/' {
             self.advance()?;
             let namespace = self.pop_namespace();
-            self.handler.end_element(namespace, lname.as_str(), qualified_name);
+            self.handler
+                .end_element(namespace, lname.as_str(), qualified_name);
         }
         self.expect_char('>')?;
         self.skip_whitespace()?;
@@ -139,7 +140,10 @@ impl<'a> SAXParser<'a> {
 
         if att_name.starts_with("xmlns:") {
             let prefix = att_name[6..].to_string();
-            self.prefix_mapping.insert(prefix, att_value.to_string());
+            self.prefix_mapping
+                .insert(prefix.clone(), att_value.to_string());
+            self.handler
+                .start_prefix_mapping(&prefix, &att_value);
         }
 
         let namespace = if att_name == "xmlns" {

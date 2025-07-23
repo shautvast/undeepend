@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use undeepend::xml::sax_parser::parse_string;
 use undeepend::xml::{Attribute, SaxError, SaxHandler};
 
@@ -120,10 +121,16 @@ fn test_namespace_prefixes() {
         testhandler.elements[2],
         r#"<http://example.com/books:page>"#
     );
-    assert_eq!(testhandler.elements[3], r#"<http://example.com/covers:cover>"#);
+    assert_eq!(
+        testhandler.elements[3],
+        r#"<http://example.com/covers:cover>"#
+    );
     assert_eq!(testhandler.elements[4], r#"<publisher>"#);
     assert_eq!(testhandler.end_element_called, 5);
     assert_eq!(testhandler.end_document_called, 1);
+    assert_eq!(testhandler.mappings.len(), 2);
+    assert_eq!(testhandler.mappings["books"], "http://example.com/books");
+    assert_eq!(testhandler.mappings["covers"], "http://example.com/covers");
 }
 
 #[derive(Debug)]
@@ -133,6 +140,7 @@ struct TestHandler {
     start_element_called: usize,
     end_element_called: usize,
     elements: Vec<String>,
+    mappings: HashMap<String, String>,
 }
 
 impl TestHandler {
@@ -143,6 +151,7 @@ impl TestHandler {
             start_element_called: 0,
             end_element_called: 0,
             elements: vec![],
+            mappings: HashMap::new(),
         }
     }
 }
@@ -156,12 +165,8 @@ impl SaxHandler for TestHandler {
         self.end_document_called += 1;
     }
 
-    fn start_prefix_mapping(&mut self, _prefix: &str, _uri: &str) {
-        todo!()
-    }
-
-    fn end_prefix_mapping(&mut self, _prefix: &str, _uri: &str) {
-        todo!()
+    fn start_prefix_mapping(&mut self, prefix: &str, uri: &str) {
+        self.mappings.insert(prefix.to_string(), uri.to_string());
     }
 
     fn start_element(

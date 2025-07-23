@@ -10,12 +10,10 @@ impl SaxHandler for DebugHandler {
     fn end_document(&mut self) {
         debug!("end_document");
     }
-    fn start_prefix_mapping(&mut self, _prefix: &str, _uri: &str) {
-        debug!("start_prefix_mapping");
+    fn start_prefix_mapping(&mut self, prefix: &str, _uri: &str) {
+        debug!("start_prefix_mapping for {}", prefix);
     }
-    fn end_prefix_mapping(&mut self, _prefix: &str, _uri: &str) {
-        debug!("end_prefix_mapping");
-    }
+
     fn start_element(
         &mut self,
         _uri: Option<String>,

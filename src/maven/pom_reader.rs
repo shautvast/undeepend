@@ -21,11 +21,7 @@ impl SaxHandler for PomReader{
     fn start_prefix_mapping(&mut self, prefix: &str, uri: &str) {
         todo!()
     }
-
-    fn end_prefix_mapping(&mut self, prefix: &str, uri: &str) {
-        todo!()
-    }
-
+    
     fn start_element(&mut self, uri: Option<String>, local_name: &str, qualified_name: &str, attributes: Vec<Attribute>) {
         todo!()
     }

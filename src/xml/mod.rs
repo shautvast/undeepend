@@ -12,7 +12,6 @@ pub trait SaxHandler {
     fn start_document(&mut self);
     fn end_document(&mut self);
     fn start_prefix_mapping(&mut self, prefix: &str, uri: &str);
-    fn end_prefix_mapping(&mut self, prefix: &str, uri: &str);
     fn start_element(
         &mut self,
         uri: Option<String>,
