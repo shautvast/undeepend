@@ -10,6 +10,7 @@ pub struct SAXParser<'a> {
     handler: Box<&'a mut dyn SaxHandler>,
     position: usize,
     current: char,
+    char_buffer: Vec<char>,
     namespace_stack: Vec<(String, isize)>,
     prefix_mapping: HashMap<String, String>,
 }
@@ -21,6 +22,7 @@ impl<'a> SAXParser<'a> {
             handler,
             position: 0,
             current: '\0',
+            char_buffer: Vec::new(),
             namespace_stack: Vec::new(),
             prefix_mapping: HashMap::new(),
         }
@@ -40,6 +42,10 @@ impl<'a> SAXParser<'a> {
     fn parse_elements(&mut self) -> Result<(), SaxError> {
         while self.position < self.xml.len() {
             if self.current == '<' {
+                if !self.char_buffer.is_empty() {
+                    self.handler.characters(&self.char_buffer);
+                    self.char_buffer.clear();
+                }
                 self.advance()?;
                 if self.current == '!' {
                     self.skip_comment()?;
@@ -48,6 +54,9 @@ impl<'a> SAXParser<'a> {
                 } else {
                     self.parse_end_element()?;
                 }
+            } else {
+                self.char_buffer.push(self.current);
+                self.advance()?;
             }
         }
         self.handler.end_document();

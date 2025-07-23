@@ -133,6 +133,14 @@ fn test_namespace_prefixes() {
     assert_eq!(testhandler.mappings["covers"], "http://example.com/covers");
 }
 
+#[test]
+fn characters(){
+    let test_xml = include_str!("resources/characters.xml");
+    let mut testhandler = TestHandler::new();
+    parse_string(test_xml.to_string(), Box::new(&mut testhandler))
+        .expect("Failed to parse test xml");
+    assert_eq!(testhandler.characters[0], "Hello World");
+}
 #[derive(Debug)]
 struct TestHandler {
     start_document_called: usize,
@@ -141,6 +149,7 @@ struct TestHandler {
     end_element_called: usize,
     elements: Vec<String>,
     mappings: HashMap<String, String>,
+    characters: Vec<String>,
 }
 
 impl TestHandler {
@@ -152,6 +161,7 @@ impl TestHandler {
             end_element_called: 0,
             elements: vec![],
             mappings: HashMap::new(),
+            characters: vec![],
         }
     }
 }
@@ -192,8 +202,8 @@ impl SaxHandler for TestHandler {
         self.end_element_called += 1;
     }
 
-    fn characters(&mut self, _chars: &[char]) {
-        todo!()
+    fn characters(&mut self, chars: &[char]) {
+        self.characters.push(chars.iter().cloned().collect());
     }
 
     fn error(&mut self, _error: &str) {
