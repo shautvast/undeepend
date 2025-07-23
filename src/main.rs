@@ -1,3 +1,4 @@
 fn main() {
-    println!("Hello, world!");
+    let message = &"xmlns:Hello, world!"[6..];
+    println!("{}",message);
 }

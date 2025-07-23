@@ -1,12 +1,11 @@
-mod sax_parser;
-mod sax_parser_test;
+pub mod sax_parser;
 mod debug;
 
 #[derive(Debug)]
 pub struct Attribute {
-    name: String,
-    namespace: Option<String>,
-    value: String,
+    pub name: String,
+    pub namespace: Option<String>,
+    pub value: String,
 }
 
 pub trait SaxHandler {
@@ -33,6 +32,7 @@ pub enum SaxError {
     BadCharacter,
     UnexpectedEof,
     UnexpectedCharacter(String),
+    UndeclaredNamespacePrefix(String),
 }
 
 impl fmt::Display for SaxError {
@@ -41,6 +41,7 @@ impl fmt::Display for SaxError {
             SaxError::BadCharacter => write!(f, "Bad character"),
             SaxError::UnexpectedEof => write!(f, "Unexpected end of document"),
             SaxError::UnexpectedCharacter(c) => write!(f, "Unexpected character {}",c),
+            SaxError::UndeclaredNamespacePrefix(prefix) => write!(f, "Undeclared namespace prefix{}", prefix),
         }
     }
 }

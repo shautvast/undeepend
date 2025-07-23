@@ -238,12 +238,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "undeepend2"
+name = "undeepend"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "env_logger",
  "log",
+ "regex",
 ]
 
 [[package]]

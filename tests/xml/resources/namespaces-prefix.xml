@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Test XML file for SAX parser -->
+<bookstore>
+    <book xmlns:books="http://example.com/books"
+          xmlns:covers="http://example.com/covers"
+          id="1" category="fiction">
+        <books:page/>
+        <covers:cover/>
+    </book>
+    <publisher/>
+</bookstore>

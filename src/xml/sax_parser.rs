@@ -1,17 +1,17 @@
-use crate::maven::xml::{Attribute, SaxError, SaxHandler};
-use anyhow::anyhow;
+use crate::xml::{Attribute, SaxError, SaxHandler};
+use std::collections::HashMap;
 
 pub fn parse_string(xml: String, handler: Box<&mut dyn SaxHandler>) -> Result<(), SaxError> {
-    let mut parser = SAXParser::new(xml, handler);
-    parser.parse()
+    SAXParser::new(xml, handler).parse()
 }
 
-struct SAXParser<'a> {
+pub struct SAXParser<'a> {
     xml: Vec<char>,
     handler: Box<&'a mut dyn SaxHandler>,
     position: usize,
     current: char,
     namespace_stack: Vec<(String, isize)>,
+    prefix_mapping: HashMap<String, String>,
 }
 
 impl<'a> SAXParser<'a> {
@@ -22,6 +22,7 @@ impl<'a> SAXParser<'a> {
             position: 0,
             current: '\0',
             namespace_stack: Vec::new(),
+            prefix_mapping: HashMap::new(),
         }
     }
 
@@ -36,7 +37,7 @@ impl<'a> SAXParser<'a> {
         self.parse_elements()
     }
 
-    fn parse_elements(&mut self) -> Result<(), SaxError>  {
+    fn parse_elements(&mut self) -> Result<(), SaxError> {
         while self.position < self.xml.len() {
             if self.current == '<' {
                 self.advance()?;
@@ -80,7 +81,8 @@ impl<'a> SAXParser<'a> {
     }
 
     fn parse_start_element(&mut self) -> Result<(), SaxError> {
-        let name = self.read_until(" \t\n/>")?;
+        let qname = self.read_until(" \t\n/>")?;
+
         let mut atts = vec![];
         let mut c = self.current;
 
@@ -90,21 +92,38 @@ impl<'a> SAXParser<'a> {
             c = self.advance()?;
         }
 
-        let namespace = if !self.namespace_stack.is_empty() {
+        let (namespace, lname) = if qname.contains(":") {
+            let tokens = qname.splitn(2, ":").collect::<Vec<&str>>();
+            let prefix = tokens[0].to_string();
+            let name = tokens[1].to_string();
+            let namespace = self.prefix_mapping.get(&prefix);
+            if let Some(namespace) = namespace {
+                (Some(namespace.to_string()), name)
+            } else {
+                return Err(SaxError::UndeclaredNamespacePrefix(prefix));
+            }
+        } else if !self.namespace_stack.is_empty() {
             let (name, count) = self.namespace_stack.pop().unwrap();
             self.namespace_stack.push((name.clone(), count + 1));
-            Some(name.clone())
+            (Some(name.clone()), qname)
         } else {
-            None
+            (None, qname)
+        };
+
+        let qualified_name = if let Some(namespace) = &namespace{
+            &format!("{}:{}", namespace.clone(), &lname)
+        } else {
+            &lname
         };
 
         self.handler
-            .start_element(namespace.clone(), name.as_str(), "", atts);
+            .start_element(namespace.clone(), lname.as_str(), qualified_name, atts);
         self.skip_whitespace()?;
+
         if self.current == '/' {
             self.advance()?;
             let namespace = self.pop_namespace();
-            self.handler.end_element(namespace, name.as_str(), "");
+            self.handler.end_element(namespace, lname.as_str(), qualified_name);
         }
         self.expect_char('>')?;
         self.skip_whitespace()?;
@@ -117,6 +136,11 @@ impl<'a> SAXParser<'a> {
         self.expect("=", "Expected =")?;
         self.expect("\"", "Expected start of attribute value")?;
         let att_value = self.read_until("\"")?;
+
+        if att_name.starts_with("xmlns:") {
+            let prefix = att_name[6..].to_string();
+            self.prefix_mapping.insert(prefix, att_value.to_string());
+        }
 
         let namespace = if att_name == "xmlns" {
             self.namespace_stack.push((att_value.clone(), -1));
@@ -200,7 +224,7 @@ impl<'a> SAXParser<'a> {
     fn expect(&mut self, expected: &str, message: &str) -> Result<(), SaxError> {
         for c in expected.chars() {
             if !self.expect_char(c)? {
-                return Err(SaxError::UnexpectedCharacter(message.to_string()))
+                return Err(SaxError::UnexpectedCharacter(message.to_string()));
             }
         }
         Ok(())

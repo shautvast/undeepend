@@ -1,5 +1,5 @@
 use log::debug;
-use crate::maven::xml::SaxHandler;
+use crate::xml::SaxHandler;
 
 pub struct DebugHandler {}
 
@@ -21,7 +21,7 @@ impl SaxHandler for DebugHandler {
         _uri: Option<String>,
         local_name: &str,
         _qualified_name: &str,
-        attributes: Vec<crate::maven::xml::Attribute>,
+        attributes: Vec<crate::xml::Attribute>,
     ) {
         debug!("start_element {}, {:?}", local_name, attributes);
     }
