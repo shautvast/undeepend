@@ -11,6 +11,7 @@
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
+        <hamcrest.version>1.1</hamcrest.version>
     </properties>
 
     <url>http://www.mockito.org</url>
@@ -22,17 +23,26 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-   
+
     <modules>
         <module>a</module>
         <module>b</module>
     </modules>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest-core</artifactId>
+                <version>${hamcrest.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-core</artifactId>
-            <version>1.1</version>
         </dependency>
         <dependency>
             <groupId>org.objenesis</groupId>
