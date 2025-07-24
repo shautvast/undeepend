@@ -2,6 +2,7 @@ use crate::maven::pom::{Dependency, Developer, Parent, Pom};
 use crate::xml::SaxError;
 use crate::xml::dom_parser::{Node, get_document};
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 pub fn get_pom(xml: impl Into<String>) -> Result<Pom, SaxError> {
     let mut group_id = None;
@@ -14,7 +15,7 @@ pub fn get_pom(xml: impl Into<String>) -> Result<Pom, SaxError> {
     let mut dependencies = vec![];
     let mut dependency_management = vec![];
     let mut properties = HashMap::new(); // useless assignment...
-    let mut modules = vec![]; // not useless assignment...
+    let mut module_names = vec![]; // not useless assignment...
 
     for child in get_document(xml.into().as_str())?.root.children {
         match child.name.as_str() {
@@ -28,7 +29,7 @@ pub fn get_pom(xml: impl Into<String>) -> Result<Pom, SaxError> {
             "dependencies" => dependencies = get_dependencies(child),
             "dependencyManagement" => dependency_management = get_dependency_mgmt(child),
             "properties" => properties = get_properties(child),
-            "modules" => add_modules(child, &mut modules),
+            "modules" => add_modules(child, &mut module_names),
             _ => {}
         }
     }
@@ -43,7 +44,9 @@ pub fn get_pom(xml: impl Into<String>) -> Result<Pom, SaxError> {
         dependencies,
         dependency_management,
         properties,
-        modules,
+        module_names,
+        modules: vec![],
+        directory: PathBuf::new(), // resolved later, make optional?
     })
 }
 

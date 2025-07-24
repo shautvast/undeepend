@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 /// The Maven variant to parse poms
 /// These structs is directly modelled after the XML because that is what strong-xml plugin requires
@@ -14,7 +15,13 @@ pub struct Pom {
     pub dependencies: Vec<Dependency>,
     pub dependency_management: Vec<Dependency>,
     pub properties: HashMap<String, String>,
-    pub modules: Vec<String>,
+    pub module_names: Vec<String>,
+    pub modules: Vec<Pom>,
+    pub directory: PathBuf,
+}
+
+impl Pom {
+
 }
 
 #[derive(PartialEq, Debug)]
@@ -42,13 +49,4 @@ pub struct Dependency {
     pub group_id: String,
     pub artifact_id: String,
     pub version: Option<String>,
-}
-
-#[cfg(test)]
-mod test {
-
-    use crate::maven::pom::Pom;
-
-    #[test]
-    fn parse_should_not_fail() {}
 }

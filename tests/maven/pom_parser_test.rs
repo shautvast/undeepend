@@ -28,8 +28,8 @@ fn test_pom_parser_is_correct() {
     assert_eq!(Some("1.0".to_string()), objenesis.version);
 
     assert_eq!(2, pom.modules.len());
-    assert_eq!("a", pom.modules[0]);
-    assert_eq!("b", pom.modules[1]);
+    assert_eq!("a", pom.module_names[0]);
+    assert_eq!("b", pom.module_names[1]);
 
     assert_eq!(1, pom.dependency_management.len());
     let hamcrest = &pom.dependency_management[0];
