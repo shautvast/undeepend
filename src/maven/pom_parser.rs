@@ -13,7 +13,8 @@ pub fn get_pom(xml: &str) -> Result<Pom, SaxError> {
     let mut url = None;
     let mut dependencies = vec![];
     let mut dependency_management = vec![];
-    let mut properties = HashMap::new(); //useless assignment...
+    let mut properties = HashMap::new(); // useless assignment...
+    let mut modules = vec![]; // not useless assignment...
 
     for child in get_document(xml)?.root.children {
         match child.name.as_str() {
@@ -27,6 +28,7 @@ pub fn get_pom(xml: &str) -> Result<Pom, SaxError> {
             "dependencies" => dependencies = get_dependencies(child),
             "dependencyManagement" => dependency_management = get_dependency_mgmt(child),
             "properties" => properties = get_properties(child),
+            "modules" => add_modules(child, &mut modules),
             _ => {}
         }
     }
@@ -41,7 +43,14 @@ pub fn get_pom(xml: &str) -> Result<Pom, SaxError> {
         dependencies,
         dependency_management,
         properties,
+        modules,
     })
+}
+
+fn add_modules(element: Node, modules: &mut Vec<String>){
+    for module in element.children {
+        modules.push(module.text.expect("Cannot read module name"));
+    }
 }
 
 fn get_properties(element: Node) -> HashMap<String, String> {

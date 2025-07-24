@@ -14,6 +14,7 @@ pub struct Pom {
     pub dependencies: Vec<Dependency>,
     pub dependency_management: Vec<Dependency>,
     pub properties: HashMap<String, String>,
+    pub modules: Vec<String>,
 }
 
 #[derive(PartialEq, Debug)]

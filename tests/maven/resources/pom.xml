@@ -22,15 +22,12 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-    <scm>
-        <url>http://code.google.com/p/mockito/source/browse/</url>
-    </scm>
-    <developers>
-        <developer>
-            <id>szczepiq</id>
-            <name>Szczepan Faber</name>
-        </developer>
-    </developers>
+   
+    <modules>
+        <module>a</module>
+        <module>b</module>
+    </modules>
+
     <dependencies>
         <dependency>
             <groupId>org.hamcrest</groupId>

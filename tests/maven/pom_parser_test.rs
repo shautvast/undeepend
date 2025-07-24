@@ -1,5 +1,4 @@
 use undeepend::maven::pom_parser::get_pom;
-use undeepend::xml::dom_parser::get_document;
 
 #[test]
 fn test_pom_parser_is_correct() {
@@ -27,4 +26,8 @@ fn test_pom_parser_is_correct() {
     assert_eq!("objenesis", objenesis.artifact_id);
     assert_eq!(Some("1.0".to_string()), objenesis.version);
     assert!(pom.dependency_management.is_empty());
+
+    assert_eq!(2, pom.modules.len());
+    assert_eq!("a", pom.modules[0]);
+    assert_eq!("b", pom.modules[1]);
 }
