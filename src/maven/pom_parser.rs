@@ -3,7 +3,7 @@ use crate::xml::SaxError;
 use crate::xml::dom_parser::{Node, get_document};
 use std::collections::HashMap;
 
-pub fn get_pom(xml: &str) -> Result<Pom, SaxError> {
+pub fn get_pom(xml: impl Into<String>) -> Result<Pom, SaxError> {
     let mut group_id = None;
     let mut artefact_id = None;
     let mut parent = None;
@@ -16,7 +16,7 @@ pub fn get_pom(xml: &str) -> Result<Pom, SaxError> {
     let mut properties = HashMap::new(); // useless assignment...
     let mut modules = vec![]; // not useless assignment...
 
-    for child in get_document(xml)?.root.children {
+    for child in get_document(xml.into().as_str())?.root.children {
         match child.name.as_str() {
             "groupId" => group_id = child.text,
             "artifactId" => artefact_id = child.text,
@@ -37,7 +37,7 @@ pub fn get_pom(xml: &str) -> Result<Pom, SaxError> {
         group_id,
         artifact_id: artefact_id.unwrap(),
         version,
-        name: name.unwrap(),
+        name,
         packaging,
         url,
         dependencies,

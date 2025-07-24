@@ -8,7 +8,7 @@ pub struct Pom {
     pub group_id: Option<String>,
     pub artifact_id: String,
     pub version: Option<String>,
-    pub name: String,
+    pub name: Option<String>,
     pub packaging: Option<String>,
     pub url: Option<String>,
     pub dependencies: Vec<Dependency>,

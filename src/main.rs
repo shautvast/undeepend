@@ -1,4 +1,7 @@
+use std::path::Path;
+use undeepend::maven::project_parser::parse_project;
+
 fn main() {
-    let message = &"xmlns:Hello, world!"[6..];
-    println!("{}",message);
+    let project = parse_project(Path::new("tests/maven/resources/sample_project")).unwrap();
+    println!("{:?}", project);
 }
