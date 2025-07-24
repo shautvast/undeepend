@@ -7,6 +7,12 @@
     <version>1.9.5</version>
     <name>Mockito</name>
     <packaging>jar</packaging>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+    </properties>
+
     <url>http://www.mockito.org</url>
     <description>Mock objects library for java</description>
     <licenses>

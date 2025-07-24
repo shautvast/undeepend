@@ -1,6 +1,7 @@
 use crate::maven::pom::{Dependency, Developer, Parent, Pom};
 use crate::xml::SaxError;
 use crate::xml::dom_parser::{Node, get_document};
+use std::collections::HashMap;
 
 pub fn get_pom(xml: &str) -> Result<Pom, SaxError> {
     let mut group_id = None;
@@ -12,6 +13,7 @@ pub fn get_pom(xml: &str) -> Result<Pom, SaxError> {
     let mut url = None;
     let mut dependencies = vec![];
     let mut dependency_management = vec![];
+    let mut properties = HashMap::new(); //useless assignment...
 
     for child in get_document(xml)?.root.children {
         match child.name.as_str() {
@@ -24,6 +26,7 @@ pub fn get_pom(xml: &str) -> Result<Pom, SaxError> {
             "url" => url = child.text,
             "dependencies" => dependencies = get_dependencies(child),
             "dependencyManagement" => dependency_management = get_dependency_mgmt(child),
+            "properties" => properties = get_properties(child),
             _ => {}
         }
     }
@@ -36,12 +39,27 @@ pub fn get_pom(xml: &str) -> Result<Pom, SaxError> {
         packaging,
         url,
         dependencies,
-        dependency_management
+        dependency_management,
+        properties,
     })
 }
 
+fn get_properties(element: Node) -> HashMap<String, String> {
+    let mut properties = HashMap::new();
+    for property in element.children {
+        properties.insert(
+            property.name.clone(),
+            property
+                .text
+                .expect(format!("Cannot read property '{}'", property.name).as_str())
+                .to_string(),
+        );
+    }
+    properties
+}
+
 fn get_dependency_mgmt(element: Node) -> Vec<Dependency> {
-    if !element.children.is_empty(){
+    if !element.children.is_empty() {
         get_dependencies(element.children.first().unwrap().clone())
     } else {
         vec![]

@@ -1,2 +1,2 @@
 mod xml;
-mod pom;
+mod maven;
