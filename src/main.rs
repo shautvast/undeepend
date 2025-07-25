@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, fs};
 use std::path::PathBuf;
 use undeepend::maven::project::parse_project;
 
@@ -8,5 +8,6 @@ fn main() {
         env::current_dir().expect("Could not access current directory")
     } else { PathBuf::from(&args[1]) };
     let project = parse_project(&dir).unwrap();
-    println!("{:?}", project.get_dependencies(&project.root));
+    
+    fs::write(PathBuf::from("index.html"), project.generate_dependency_html()).unwrap();
 }
