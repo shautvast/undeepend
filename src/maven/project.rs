@@ -7,6 +7,10 @@ use std::sync::LazyLock;
 
 static PROPERTY_EXPR: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\$\{(.+)}").unwrap());
 
+/// Loads all poms from a given project directory.
+/// A POM (project object model) is a description of the project to build written in XML.
+/// It has modules which are also a pom.xml in a subdirectory of the project root
+/// (nesting is in theory infinite, but in practice you'll have 2 or maybe 3 levels)
 pub fn parse_project(project_dir: &Path) -> Result<Project, String> {
     if !project_dir.is_dir() {
         return Err(format!("{:?} is not a directory", project_dir));
@@ -14,7 +18,10 @@ pub fn parse_project(project_dir: &Path) -> Result<Project, String> {
 
     let mut pom_file = project_dir.to_path_buf();
     pom_file.push(Path::new("pom.xml"));
-
+    if !pom_file.exists(){
+        return Err(format!("Directory {} does not contain pom.xml", project_dir.to_str().unwrap()));
+    }
+    
     let pom_file = fs::read_to_string(pom_file).map_err(|e| e.to_string())?;
     let mut root = get_pom(pom_file).map_err(|e| e.to_string())?;
 
@@ -22,6 +29,7 @@ pub fn parse_project(project_dir: &Path) -> Result<Project, String> {
     Ok(Project { root })
 }
 
+// examines modules in pom and loads them
 fn resolve_modules(project_dir: &Path, pom: &mut Pom) {
     let mut modules = pom
         .module_names
@@ -34,6 +42,7 @@ fn resolve_modules(project_dir: &Path, pom: &mut Pom) {
     pom.modules.append(&mut modules);
 }
 
+// loads module pom
 fn read_module_pom(project_dir: &Path, module: &String) -> Pom {
     let mut module_dir = project_dir.to_path_buf();
     module_dir.push(Path::new(module));
@@ -48,12 +57,15 @@ fn read_module_pom(project_dir: &Path, module: &String) -> Pom {
     pom
 }
 
+//main entry to project
+//the (root) pom holds the child references to modules
 #[derive(Debug)]
 pub struct Project {
     pub root: Pom,
 }
 
 impl Project {
+    /// get a list of dependencies for a pom in the project
     pub fn get_dependencies(&self, pom: &Pom) -> Vec<Dependency> {
         pom.dependencies
             .iter()
@@ -68,20 +80,31 @@ impl Project {
             .collect()
     }
 
+    // determining a version of a dependency can be done in different ways
+    // 1. version element below dependency, containing the version
+    // 2. version element below dependency, containing a property name that is declared in the pom, or a parent which contains the version
+    // 3. there is no version. In that case in the pom hierarchy there must be a dependencyManagement element in which the version is set
+    // 4. combination of 2 and 3. This is what I typically see in enterprise software. The root pom contains a list of version properties, so all versions are kept in the same place. Takes some diligence to maintain though.
     fn get_version(&self, pom: &Pom, group_id: &str, artifact_id: &str) -> Option<String> {
         pom.dependencies
             .iter()
+            // find to dependency
             .find(|d| d.group_id == group_id && d.artifact_id == artifact_id)
+            // extract the version
             .and_then(|d| d.version.clone())
+            // is it a property?
             .and_then(|version| {
                 if PROPERTY_EXPR.is_match(&version) {
                     let property_name = &PROPERTY_EXPR.captures(&version).unwrap()[1];
+                    // search property in project hierarchy
                     self.get_property(pom, property_name)
                 } else {
                     Some(version)
                 }
             })
             .or_else(|| {
+                // version not set, try dependencyManagement
+                // TODO also search super poms
                 pom.dependency_management
                     .iter()
                     .find(|d| d.group_id == group_id && d.artifact_id == artifact_id)
@@ -97,6 +120,7 @@ impl Project {
             })
     }
 
+    // recursively searches a property going up the chain towards parents
     fn get_property(&self, pom: &Pom, name: &str) -> Option<String> {
         if pom.properties.contains_key(name) {
             pom.properties.get(name).cloned()
@@ -111,7 +135,24 @@ impl Project {
         }
     }
 
+    // look up a pom in the project
     fn get_pom<'a>(&'a self, group_id: &str, artifact_id: &str) -> Option<&'a Pom> {
+
+        // inner function to match poms (by artifactId and groupId)
+        // (extract if needed elsewhere)
+        fn is_same(pom: &Pom, group_id: &str, artifact_id: &str) -> bool {
+            if pom.artifact_id == artifact_id {
+                if let Some(pom_group_id) = &pom.group_id {
+                    pom_group_id == group_id
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        }
+
+        // inner function for recursion
         fn get_project_pom<'a>(pom: &'a Pom, group_id: &str, artifact_id: &str) -> Option<&'a Pom> {
             if is_same(pom, group_id, artifact_id) {
                 return Some(pom);
@@ -122,18 +163,8 @@ impl Project {
             }
             None
         }
+
         get_project_pom(&self.root, group_id, artifact_id)
     }
 }
 
-fn is_same(pom: &Pom, group_id: &str, artifact_id: &str) -> bool {
-    if pom.artifact_id == artifact_id {
-        if let Some(pom_group_id) = &pom.group_id {
-            pom_group_id == group_id
-        } else {
-            false
-        }
-    } else {
-        false
-    }
-}

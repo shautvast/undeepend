@@ -1,11 +1,24 @@
 use crate::xml::{Attribute, SaxError, SaxHandler};
 use std::collections::HashMap;
 
+// So I decided to model it after java SAX api, which was a bad choice
+// it defines a trait, like the java SAXHandler interface
+// The rusty way to do it would be using a SAXEvent enum with different variants where there are now trait methods.
+// That would also imply that you go from push (current) to a pull parser, which gives you more control. But hey, who needs that?
+
+/// Parses an xml as string and call the SAXHandler functions accordingly
+// no streaming? Nah. I could do that, but I didn't feel the need, because maven pom.xmls should not be of gigbabyte size
+// It's not a lot of code, but it handles my pom files well, so far. I have see implementations (xml_oxide) that are way bigger.
+// It's a basic recursive descent parser.
+// It handles namespaces (and prefixes) correctly AFAIK
+// No validation (DTD/XSD)
+// I probably missed some other XML functionality that I don't think I need.
 pub fn parse_string(xml: &str, handler: Box<&mut dyn SaxHandler>) -> Result<(), SaxError> {
     SAXParser::new(xml, handler).parse()
 }
 
-pub struct SAXParser<'a> {
+// struct containing the parser state
+struct SAXParser<'a> {
     xml: Vec<char>,
     handler: Box<&'a mut dyn SaxHandler>,
     position: usize,
@@ -16,7 +29,8 @@ pub struct SAXParser<'a> {
 }
 
 impl<'a> SAXParser<'a> {
-    pub fn new(xml: &str, handler: Box<&'a mut dyn SaxHandler>) -> Self {
+    ///
+    fn new(xml: &str, handler: Box<&'a mut dyn SaxHandler>) -> Self {
         Self {
             xml: xml.chars().collect(),
             handler,

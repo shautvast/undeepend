@@ -4,6 +4,7 @@ use crate::xml::dom_parser::{Node, get_document};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+/// parse the pom.xml into a Pom object (struct)
 pub fn get_pom(xml: impl Into<String>) -> Result<Pom, SaxError> {
     let mut group_id = None;
     let mut artefact_id = None;
@@ -14,7 +15,7 @@ pub fn get_pom(xml: impl Into<String>) -> Result<Pom, SaxError> {
     let mut url = None;
     let mut dependencies = vec![];
     let mut dependency_management = vec![];
-    let mut properties = HashMap::new(); // useless assignment...
+    let mut properties = HashMap::new(); // useless assignments...
     let mut module_names = vec![]; // not useless assignment...
 
     for child in get_document(xml.into().as_str())?.root.children {

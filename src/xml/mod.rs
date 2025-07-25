@@ -1,5 +1,4 @@
 pub mod sax_parser;
-mod debug;
 pub mod dom_parser;
 
 #[derive(Debug,Clone,PartialEq)]
@@ -7,15 +6,6 @@ pub struct Attribute {
     pub name: String,
     pub namespace: Option<String>,
     pub value: String,
-}
-
-enum SaxEvent{
-    StartDocument,
-    EndDocument,
-    StartElement(Option<String>, String, String, Vec<Attribute>),
-    EndElement(Option<String>, String),
-    Characters(String),
-    Error(String)
 }
 
 pub trait SaxHandler {
@@ -36,6 +26,8 @@ pub trait SaxHandler {
 
 use std::fmt;
 
+/// Custom error for XML situations
+// likely incomplete
 #[derive(Debug, PartialEq)]
 pub enum SaxError {
     BadCharacter,

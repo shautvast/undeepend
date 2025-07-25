@@ -1,3 +1,6 @@
+// part of maven model, I may throw it away
+
+
 /// The Maven variant to parse poms
 /// These structs is directly modelled after the XML because that is what strong-xml plugin requires
 #[derive(PartialEq, Debug)]

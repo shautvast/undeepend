@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-/// The Maven variant to parse poms
-/// These structs is directly modelled after the XML because that is what strong-xml plugin requires
+/// the maven object model
+
 #[derive(PartialEq, Debug)]
 pub struct Pom {
     pub parent: Option<Parent>,

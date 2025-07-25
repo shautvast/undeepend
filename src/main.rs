@@ -1,7 +1,12 @@
-use std::path::Path;
+use std::env;
+use std::path::PathBuf;
 use undeepend::maven::project::parse_project;
 
 fn main() {
-    let project = parse_project(Path::new("tests/maven/resources/sample_project")).unwrap();
+    let args = std::env::args().collect::<Vec<String>>();
+    let dir = if args.len() ==1 {
+        env::current_dir().expect("Could not access current directory")
+    } else { PathBuf::from(&args[1]) };
+    let project = parse_project(&dir).unwrap();
     println!("{:?}", project.get_dependencies(&project.root));
 }

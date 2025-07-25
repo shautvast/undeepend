@@ -1,6 +1,7 @@
 use crate::xml::sax_parser::parse_string;
 use crate::xml::{Attribute, SaxError, SaxHandler};
 
+/// get a generic XML object (Document) from the xml contents. This is called DOM parsing
 pub fn get_document(xml: &str) -> Result<Document, SaxError> {
     let mut dom_hax_handler = DomSaxHandler::new();
     parse_string(xml, Box::new(&mut dom_hax_handler))?;
@@ -13,6 +14,9 @@ pub struct Document {
     pub root: Node,
 }
 
+// used internally to holds usize references to children.
+// needed to ward off the borrow checker
+// don't ask about the name.
 #[derive(Debug, Clone, PartialEq)]
 struct BNode {
     name: String,
@@ -22,6 +26,7 @@ struct BNode {
     text: Option<String>,
 }
 
+// in the end the usize references are translated to other Nodes
 #[derive(Debug, Clone, PartialEq)]
 pub struct Node {
     pub name: String,
@@ -32,13 +37,13 @@ pub struct Node {
 }
 
 impl From<&BNode> for Node {
-    fn from(bnode: &BNode) -> Self {
+    fn from(b_node: &BNode) -> Self {
         Self {
-            name: bnode.name.clone(),
-            namespace: bnode.namespace.clone(),
+            name: b_node.name.clone(),
+            namespace: b_node.namespace.clone(),
             children: vec![],
-            attributes: bnode.attributes.to_vec(),
-            text: bnode.text.clone(),
+            attributes: b_node.attributes.to_vec(),
+            text: b_node.text.clone(),
         }
     }
 }
@@ -58,7 +63,6 @@ impl BNode {
 struct DomSaxHandler {
     node_stack: Vec<usize>,
     nodes: Vec<BNode>,
-    name: String,
 }
 
 impl DomSaxHandler {
@@ -66,19 +70,18 @@ impl DomSaxHandler {
         Self {
             node_stack: vec![],
             nodes: vec![],
-            name: "koe".to_string(),
         }
     }
 
     fn into_doc(self) -> Document {
-        let bnode = &self.nodes[self.node_stack[0]];
-        let node = self.to_node(bnode);
+        let b_node = &self.nodes[self.node_stack[0]];
+        let node = self.to_node(b_node);
         Document { root: node }
     }
 
-    fn to_node(&self, bnode: &BNode) -> Node {
-        let mut node: Node = bnode.into();
-        for child_index in &bnode.children {
+    fn to_node(&self, b_node: &BNode) -> Node {
+        let mut node: Node = b_node.into();
+        for child_index in &b_node.children {
             let child = self.nodes.get(*child_index).unwrap();
             node.children.push(self.to_node(child));
         }
