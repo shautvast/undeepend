@@ -18,10 +18,13 @@ pub fn parse_project(project_dir: &Path) -> Result<Project, String> {
 
     let mut pom_file = project_dir.to_path_buf();
     pom_file.push(Path::new("pom.xml"));
-    if !pom_file.exists(){
-        return Err(format!("Directory {} does not contain pom.xml", project_dir.to_str().unwrap()));
+    if !pom_file.exists() {
+        return Err(format!(
+            "Directory {} does not contain pom.xml",
+            project_dir.to_str().unwrap()
+        ));
     }
-    
+
     let pom_file = fs::read_to_string(pom_file).map_err(|e| e.to_string())?;
     let mut root = get_pom(pom_file).map_err(|e| e.to_string())?;
 
@@ -92,52 +95,74 @@ impl Project {
             .find(|d| d.group_id == group_id && d.artifact_id == artifact_id)
             // extract the version
             .and_then(|d| d.version.clone())
-            // is it a property?
-            .and_then(|version| {
-                if PROPERTY_EXPR.is_match(&version) {
-                    let property_name = &PROPERTY_EXPR.captures(&version).unwrap()[1];
-                    // search property in project hierarchy
-                    self.get_property(pom, property_name)
-                } else {
-                    Some(version)
-                }
-            })
             .or_else(|| {
                 // version not set, try dependencyManagement
-                // TODO also search super poms
-                pom.dependency_management
+                self.collect_managed_dependencies(pom, group_id, artifact_id)
                     .iter()
-                    .find(|d| d.group_id == group_id && d.artifact_id == artifact_id)
+                    .find(|d| d.version.is_some())
                     .and_then(|d| d.version.clone())
-                    .and_then(|version| {
-                        if PROPERTY_EXPR.is_match(&version) {
-                            let property_name = &PROPERTY_EXPR.captures(&version).unwrap()[1];
-                            self.get_property(pom, property_name)
-                        } else {
-                            Some(version)
-                        }
-                    })
+            })
+            .and_then(|v| {
+                if PROPERTY_EXPR.is_match(v.as_str()) {
+                    let property_name = &PROPERTY_EXPR.captures(&v).unwrap()[1];
+                    // search property in project hierarchy
+                    self.get_property(pom, property_name).ok()
+                } else {
+                    Some(v)
+                }
             })
     }
 
+    // searches in managed_dependencies for dependencies
+    fn collect_managed_dependencies<'a>(
+        &self,
+        pom: &'a Pom,
+        group_id: &str,
+        artifact_id: &str,
+    ) -> Vec<&'a Dependency> {
+        fn collect<'a>(
+            project: &Project,
+            pom: &'a Pom,
+            mut deps: Vec<&'a Dependency>,
+            group_id: &str,
+            artifact_id: &str,
+        ) {
+            deps.append(
+                &mut pom
+                    .dependency_management
+                    .iter()
+                    .filter(|d| d.group_id == group_id && d.artifact_id == artifact_id)
+                    .collect::<Vec<&'a Dependency>>(),
+            );
+            if let Some(parent) = &pom.parent {
+                if let Some(parent_pom) = project.get_pom(&parent.group_id, &parent.artifact_id) {
+                    collect(project, parent_pom, deps, group_id, artifact_id);
+                }
+            }
+        }
+
+        let mut dependencies = Vec::new();
+        collect(self, pom, Vec::new(), group_id, artifact_id);
+        dependencies
+    }
+
     // recursively searches a property going up the chain towards parents
-    fn get_property(&self, pom: &Pom, name: &str) -> Option<String> {
+    fn get_property(&self, pom: &Pom, name: &str) -> Result<String, String> {
         if pom.properties.contains_key(name) {
-            pom.properties.get(name).cloned()
+            pom.properties.get(name).cloned().ok_or(format!("Unknown property {}", name))
         } else if let Some(parent) = &pom.parent {
             if let Some(parent_pom) = self.get_pom(&parent.group_id, &parent.artifact_id) {
                 self.get_property(parent_pom, name)
             } else {
-                None
+                Err(format!("Unknown property {}", name))
             }
         } else {
-            None
+            Err(format!("Unknown property {}", name))
         }
     }
 
     // look up a pom in the project
     fn get_pom<'a>(&'a self, group_id: &str, artifact_id: &str) -> Option<&'a Pom> {
-
         // inner function to match poms (by artifactId and groupId)
         // (extract if needed elsewhere)
         fn is_same(pom: &Pom, group_id: &str, artifact_id: &str) -> bool {
@@ -167,4 +192,3 @@ impl Project {
         get_project_pom(&self.root, group_id, artifact_id)
     }
 }
-
