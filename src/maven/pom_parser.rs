@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 /// parse the pom.xml into a Pom object (struct)
-pub fn get_pom(xml: impl Into<String>) -> Result<Pom, SaxError> {
+pub fn get_pom(home_dir: PathBuf, xml: impl Into<String>) -> Result<Pom, SaxError> {
     let mut group_id = None;
     let mut artefact_id = None;
     let mut parent = None;
@@ -47,7 +47,7 @@ pub fn get_pom(xml: impl Into<String>) -> Result<Pom, SaxError> {
         properties,
         module_names,
         modules: vec![],
-        directory: PathBuf::new(), // resolved later, make optional?
+        directory: home_dir,
     })
 }
 

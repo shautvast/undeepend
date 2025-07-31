@@ -1,5 +1,5 @@
 use crate::maven::project::Project;
-use maud::{Markup, PreEscaped, html};
+use maud::{PreEscaped, html};
 
 impl Project {
     pub fn generate_dependency_html(&self) -> String {

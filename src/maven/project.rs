@@ -26,10 +26,12 @@ pub fn parse_project(project_dir: &Path) -> Result<Project, String> {
     }
 
     let pom_file = fs::read_to_string(pom_file).map_err(|e| e.to_string())?;
-    let mut root = get_pom(pom_file).map_err(|e| e.to_string())?;
+    let mut root = get_pom(project_dir.to_path_buf(), pom_file).map_err(|e| e.to_string())?;
 
     resolve_modules(project_dir, &mut root);
-    Ok(Project { root })
+    let project_home = project_dir.to_str().unwrap_or_else(|| "?").to_string(); //TODO unwrap can fail??
+
+    Ok(Project { project_home, root })
 }
 
 // examines modules in pom and loads them
@@ -54,16 +56,14 @@ fn read_module_pom(project_dir: &Path, module: &String) -> Pom {
     let module_pom =
         fs::read_to_string(module_file).expect(format!("Cannot read file {}", module).as_str());
 
-    let mut pom =
-        get_pom(module_pom).expect(format!("Cannot create module pom {}", module).as_str());
-    pom.directory = module_dir;
-    pom
+    get_pom(module_dir, module_pom).expect(format!("Cannot create module pom {}", module).as_str())
 }
 
 //main entry to project
 //the (root) pom holds the child references to modules
 #[derive(Debug)]
 pub struct Project {
+    pub project_home: String,
     pub root: Pom,
 }
 
@@ -119,11 +119,11 @@ impl Project {
         pom: &'a Pom,
         group_id: &str,
         artifact_id: &str,
-    ) -> Vec<&'a Dependency> {
+    ) -> Vec<Dependency> {
         fn collect<'a>(
-            project: &Project,
+            project: &'a Project,
             pom: &'a Pom,
-            mut deps: Vec<&'a Dependency>,
+            deps: &mut Vec<Dependency>,
             group_id: &str,
             artifact_id: &str,
         ) {
@@ -132,7 +132,8 @@ impl Project {
                     .dependency_management
                     .iter()
                     .filter(|d| d.group_id == group_id && d.artifact_id == artifact_id)
-                    .collect::<Vec<&'a Dependency>>(),
+                    .map(|d| d.clone())
+                    .collect::<Vec<Dependency>>(),
             );
             if let Some(parent) = &pom.parent {
                 if let Some(parent_pom) = project.get_pom(&parent.group_id, &parent.artifact_id) {
@@ -142,14 +143,17 @@ impl Project {
         }
 
         let mut dependencies = Vec::new();
-        collect(self, pom, Vec::new(), group_id, artifact_id);
+        collect(self, pom, &mut dependencies, group_id, artifact_id);
         dependencies
     }
 
     // recursively searches a property going up the chain towards parents
     fn get_property(&self, pom: &Pom, name: &str) -> Result<String, String> {
         if pom.properties.contains_key(name) {
-            pom.properties.get(name).cloned().ok_or(format!("Unknown property {}", name))
+            pom.properties
+                .get(name)
+                .cloned()
+                .ok_or(format!("Unknown property {}", name))
         } else if let Some(parent) = &pom.parent {
             if let Some(parent_pom) = self.get_pom(&parent.group_id, &parent.artifact_id) {
                 self.get_property(parent_pom, name)
