@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::env;
+use std::fmt::Display;
 use std::path::PathBuf;
 use std::sync::LazyLock;
 
@@ -56,7 +57,7 @@ pub struct Dependency {
 
 impl Dependency {
     /// returns a relative path to the dependency location
-    pub fn to_path(&self) -> PathBuf {
+    pub fn to_jar_path(&self) -> PathBuf {
         let mut path = PathBuf::new();
         path.push(self.group_id.replace(".", "/"));
         path.push(&self.artifact_id);
@@ -69,10 +70,23 @@ impl Dependency {
 
     /// returns an absolute path based on the default maven localRepository location
     // useful?
-    pub fn to_absolute_path(&self) -> PathBuf {
+    pub fn to_absolute_jar_path(&self) -> PathBuf {
         let mut absolute_path = PathBuf::from(HOME.as_str());
         absolute_path.push(".m2/repository");
-        absolute_path.push(self.to_path());
+        absolute_path.push(self.to_jar_path());
         absolute_path
+    }
+}
+
+use std::fmt;
+
+impl Display for Dependency {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let version = self.version.clone().unwrap_or_else(|| "latest".to_string());
+        write!(
+            f,
+            "{}/{}/{}/{}-{}",
+            self.group_id.replace(".","/"), self.artifact_id, version, self.artifact_id, version
+        )
     }
 }

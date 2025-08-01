@@ -196,3 +196,31 @@ impl Project {
         get_project_pom(&self.root, group_id, artifact_id)
     }
 }
+
+pub struct PomIterator<'a> {
+    project: &'a Project,
+    idx: usize,
+}
+
+impl<'a> PomIterator<'a> {
+    pub fn new(project: &'a Project) -> Self {
+        PomIterator {
+            project,
+            idx: 0,
+        }
+    }
+}
+
+impl<'a> Iterator for PomIterator<'a> {
+    type Item = &'a Pom;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.idx < self.project.root.modules.len() {
+            let module = &self.project.root.modules[self.idx];
+            self.idx += 1;
+            Some(module)
+        } else {
+            None
+        }
+    }
+}
