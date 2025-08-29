@@ -11,12 +11,15 @@ fn main() {
         PathBuf::from(&args[1])
     };
     let project = parse_project(&dir).unwrap();
+    // //
+    // // fs::write(
+    // //     PathBuf::from("index.html"),
+    // //     project.generate_dependency_html(),
+    // // )
+    // // .unwrap();
     //
-    // fs::write(
-    //     PathBuf::from("index.html"),
-    //     project.generate_dependency_html(),
-    // )
-    // .unwrap();
-
-    report(&project);
+    // report(&project);
+    for pom in project.iter(){
+        println!("{:?}", pom);
+    }
 }

@@ -4,7 +4,13 @@ COPY . .
 RUN cargo install --path .
 
 FROM debian:bullseye-slim
-RUN apt-get update && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        pkg-config \
+        libssl-dev \
+        build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=builder /usr/local/cargo/bin/undeepend /usr/local/bin/undeepend
 CMD ["undeepend"]
 

@@ -195,7 +195,15 @@ impl Project {
 
         get_project_pom(&self.root, group_id, artifact_id)
     }
+
+    pub fn iter(&self) -> PomIterator{
+        PomIterator{
+            project: self,
+            idx: 0,
+        }
+    }
 }
+
 
 pub struct PomIterator<'a> {
     project: &'a Project,
