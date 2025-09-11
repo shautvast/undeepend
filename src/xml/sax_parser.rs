@@ -46,10 +46,10 @@ impl<'a> SAXParser<'a> {
 
     fn parse(&mut self) -> Result<(), SaxError> {
         self.advance()?;
-        self.expect(
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-            "Content is not allowed in prolog.",
-        )?;
+        // self.expect(
+        //     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        //     "Content is not allowed in prolog.",
+        // ).unwrap_or_default(); // not fatal TODO
         self.skip_whitespace()?;
         self.handler.start_document();
         self.parse_elements()
@@ -63,6 +63,12 @@ impl<'a> SAXParser<'a> {
                     self.char_buffer.clear();
                 }
                 self.advance()?;
+                if self.current == '?' {
+                    self.expect(
+                        "?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+                        "Content is not allowed in prolog.",
+                    )?;
+                }
                 if self.current == '!' {
                     self.skip_comment()?;
                 } else if self.current != '/' {

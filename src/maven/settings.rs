@@ -6,6 +6,16 @@ use crate::{
 };
 
 pub fn get_settings() -> Result<Settings, String> {
+    let settings_path = get_settings_path().map_err(|e| e.to_string())?;
+    get_settings_from_path(settings_path)
+}
+
+pub fn get_settings_from_path(settings_path: PathBuf) -> Result<Settings, String> {
+    let settings = fs::read_to_string(settings_path).map_err(|e| e.to_string())?;
+    get_settings_from_string(settings)
+}
+
+pub fn get_settings_from_string(settings: String) -> Result<Settings, String> {
     let mut local_repository = None;
     let mut interactive_mode = true;
     let mut use_plugin_registry = false;
@@ -17,14 +27,8 @@ pub fn get_settings() -> Result<Settings, String> {
     let mut active_profiles = vec![];
     let mut plugin_groups = vec![];
 
-    let settings_path = get_settings_path();
-    let settings_file = fs::read_to_string(settings_path?).map_err(|e| e.to_string())?;
-
-    for child in get_document(settings_file)
-        .map_err(|err| err.to_string())?
-        .root
-        .children
-    {
+    let root = get_document(settings).map_err(|err| err.to_string())?.root;
+    for child in root.children {
         match child.name.as_str() {
             "localRepository" => local_repository = child.text,
             "interactiveMode" => interactive_mode = child.text.map(|b| b == "true").unwrap_or(true),
@@ -405,119 +409,107 @@ fn get_settings_path() -> Result<PathBuf, String> {
 
 #[derive(Debug)]
 pub struct Settings {
-    local_repository: Option<String>,
-    interactive_mode: bool,
-    use_plugin_registry: bool,
-    offline: bool,
-    proxies: Vec<Proxy>,
-    servers: Vec<Server>,
-    mirrors: Vec<Mirror>,
-    profiles: Vec<Profile>,
-    active_profiles: Vec<String>,
-    plugin_groups: Vec<String>,
+    pub local_repository: Option<String>,
+    pub interactive_mode: bool,
+    pub use_plugin_registry: bool,
+    pub offline: bool,
+    pub proxies: Vec<Proxy>,
+    pub servers: Vec<Server>,
+    pub mirrors: Vec<Mirror>,
+    pub profiles: Vec<Profile>,
+    pub active_profiles: Vec<String>,
+    pub plugin_groups: Vec<String>,
 }
 
 #[derive(Debug)]
-struct Server {
-    id: Option<String>,
-    username: Option<String>,
-    password: Option<String>,
-    private_key: Option<String>,
-    passphrase: Option<String>,
-    file_permissions: Option<String>,
-    directory_permissions: Option<String>,
-    configuration: Option<Node>, //xsd:any
+pub struct Server {
+    pub id: Option<String>,
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub private_key: Option<String>,
+    pub passphrase: Option<String>,
+    pub file_permissions: Option<String>,
+    pub directory_permissions: Option<String>,
+    pub configuration: Option<Node>, //xsd:any
 }
 
 #[derive(Debug)]
-struct Mirror {
-    id: Option<String>,
-    mirror_of: Option<String>,
-    name: Option<String>,
-    url: Option<String>,
+pub struct Mirror {
+    pub id: Option<String>,
+    pub mirror_of: Option<String>,
+    pub name: Option<String>,
+    pub url: Option<String>,
 }
 
 #[derive(Debug)]
-struct Proxy {
-    active: bool,
-    protocol: String,
-    username: Option<String>,
-    password: Option<String>,
-    port: usize,
-    host: Option<String>,
-    non_proxy_hosts: Option<String>,
-    id: Option<String>,
+pub struct Proxy {
+    pub active: bool,
+    pub protocol: String,
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub port: usize,
+    pub host: Option<String>,
+    pub non_proxy_hosts: Option<String>,
+    pub id: Option<String>,
 }
 
 #[derive(Debug)]
-struct Profile {
-    id: Option<String>,
-    activation: Option<Activation>,
-    properties: Vec<Property>,
-    repositories: Vec<Repository>,
-    plugin_repositories: Vec<Repository>,
+pub struct Profile {
+    pub id: Option<String>,
+    pub activation: Option<Activation>,
+    pub properties: Vec<Property>,
+    pub repositories: Vec<Repository>,
+    pub plugin_repositories: Vec<Repository>,
 }
 
 #[derive(Debug)]
-struct Activation {
-    active_by_default: bool,
-    jdk: Option<String>,
-    os: Option<ActivationOs>,
-    property: Option<ActivationProperty>,
-    file: Option<ActivationFile>,
+pub struct Activation {
+    pub active_by_default: bool,
+    pub jdk: Option<String>,
+    pub os: Option<ActivationOs>,
+    pub property: Option<ActivationProperty>,
+    pub file: Option<ActivationFile>,
 }
 
 #[derive(Debug)]
-struct ActivationOs {
-    name: Option<String>,
-    family: Option<String>,
-    arch: Option<String>,
-    version: Option<String>,
+pub struct ActivationOs {
+    pub name: Option<String>,
+    pub family: Option<String>,
+    pub arch: Option<String>,
+    pub version: Option<String>,
 }
 
 #[derive(Debug)]
-struct ActivationProperty {
-    name: Option<String>,
-    value: Option<String>,
+pub struct ActivationProperty {
+    pub name: Option<String>,
+    pub value: Option<String>,
 }
 
 #[derive(Debug)]
-struct ActivationFile {
-    missing: Option<String>,
-    exists: Option<String>,
+pub struct ActivationFile {
+    pub missing: Option<String>,
+    pub exists: Option<String>,
 }
 
 #[derive(Debug)]
-struct Property {
-    name: String,
-    value: Option<String>,
+pub struct Property {
+    pub name: String,
+    pub value: Option<String>,
 }
 
 #[derive(Debug)]
-struct Repository {
-    releases: Option<RepositoryPolicy>,
-    snapshots: Option<RepositoryPolicy>,
-    id: Option<String>,
-    name: Option<String>,
-    url: Option<String>,
-    layout: String,
+pub struct Repository {
+    pub releases: Option<RepositoryPolicy>,
+    pub snapshots: Option<RepositoryPolicy>,
+    pub id: Option<String>,
+    pub name: Option<String>,
+    pub url: Option<String>,
+    pub layout: String,
 }
 
 #[derive(Debug)]
-struct RepositoryPolicy {
-    enabled: bool,
-    update_policy: Option<String>,
-    checksum_policy: Option<String>,
-}
-
-#[cfg(test)]
-mod test {
-
-    use super::*;
-
-    #[test]
-    fn test() {
-        let settings = get_settings().expect("no fail");
-        println!("{:?}", settings);
-    }
+pub struct RepositoryPolicy {
+    pub enabled: bool,
+    pub update_policy: Option<String>,
+    pub checksum_policy: Option<String>,
 }
