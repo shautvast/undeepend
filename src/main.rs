@@ -1,7 +1,8 @@
 use std::path::PathBuf;
-use std::env;
+use std::{env, fs};
 use undeepend::maven::project::parse_project;
 use undeepend::maven::reporter::report;
+use undeepend::maven::settings::get_settings;
 
 fn main() {
     let args = std::env::args().collect::<Vec<String>>();
@@ -11,15 +12,12 @@ fn main() {
         PathBuf::from(&args[1])
     };
     let project = parse_project(&dir).unwrap();
-    // //
-    // // fs::write(
-    // //     PathBuf::from("index.html"),
-    // //     project.generate_dependency_html(),
-    // // )
-    // // .unwrap();
-    //
-    // report(&project);
-    for pom in project.iter(){
-        println!("{:?}", pom);
-    }
+    get_settings().unwrap();
+    fs::write(
+        PathBuf::from("index.html"),
+        project.generate_dependency_html(),
+    )
+    .unwrap();
+
+    report(&project);
 }

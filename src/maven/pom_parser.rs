@@ -7,7 +7,7 @@ use std::path::PathBuf;
 /// parse the pom.xml into a Pom object (struct)
 pub fn get_pom(home_dir: PathBuf, xml: impl Into<String>) -> Result<Pom, SaxError> {
     let mut group_id = None;
-    let mut artefact_id = None;
+    let mut artifact_id = None;
     let mut parent = None;
     let mut version = None;
     let mut name = None;
@@ -21,7 +21,7 @@ pub fn get_pom(home_dir: PathBuf, xml: impl Into<String>) -> Result<Pom, SaxErro
     for child in get_document(xml.into().as_str())?.root.children {
         match child.name.as_str() {
             "groupId" => group_id = child.text,
-            "artifactId" => artefact_id = child.text,
+            "artifactId" => artifact_id = child.text,
             "parent" => parent = Some(get_parent(&child)),
             "version" => version = child.text,
             "name" => name = child.text,
@@ -37,7 +37,7 @@ pub fn get_pom(home_dir: PathBuf, xml: impl Into<String>) -> Result<Pom, SaxErro
     Ok(Pom {
         parent,
         group_id,
-        artifact_id: artefact_id.unwrap(),
+        artifact_id: artifact_id.unwrap(),
         version,
         name,
         packaging,
@@ -91,19 +91,19 @@ fn get_dependencies(element: Node) -> Vec<Dependency> {
 
 fn get_dependency(element: Node) -> Dependency {
     let mut grouo_id = None;
-    let mut artefact_id = None;
+    let mut artifact_id = None;
     let mut version = None;
     for node in element.children {
         match node.name.as_str() {
             "groupId" => grouo_id = node.text,
-            "artifactId" => artefact_id = node.text,
+            "artifactId" => artifact_id = node.text,
             "version" => version = node.text,
             _ => {}
         }
     }
     Dependency {
         group_id: grouo_id.unwrap(),
-        artifact_id: artefact_id.unwrap(),
+        artifact_id: artifact_id.unwrap(),
         version,
     }
 }
@@ -136,19 +136,19 @@ fn get_developer(element: Node) -> Developer {
 
 fn get_parent(element: &Node) -> Parent {
     let mut group_id = None;
-    let mut artefact_id = None;
+    let mut artifact_id = None;
     let mut version = None;
     for child in &element.children {
         match child.name.as_str() {
             "groupId" => group_id = child.text.clone(),
-            "artefactId" => artefact_id = child.text.clone(),
+            "artifactId" => artifact_id = child.text.clone(),
             "version" => version = child.text.clone(),
             _ => {}
         }
     }
     Parent {
         group_id: group_id.unwrap(),
-        artifact_id: artefact_id.unwrap(),
+        artifact_id: artifact_id.unwrap(),
         version: version.unwrap(),
     }
 }

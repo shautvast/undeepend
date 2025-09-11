@@ -22,6 +22,7 @@ struct SAXParser<'a> {
     xml: Vec<char>,
     handler: Box<&'a mut dyn SaxHandler>,
     position: usize,
+    current_line: usize,
     current: char,
     char_buffer: Vec<char>,
     namespace_stack: Vec<(String, isize)>,
@@ -35,6 +36,7 @@ impl<'a> SAXParser<'a> {
             xml: xml.chars().collect(),
             handler,
             position: 0,
+            current_line: 0,
             current: '\0',
             char_buffer: Vec::new(),
             namespace_stack: Vec::new(),
@@ -111,6 +113,9 @@ impl<'a> SAXParser<'a> {
 
         while c.is_whitespace() {
             self.skip_whitespace()?;
+            if self.current == '/' {
+                break;
+            }
             atts.push(self.parse_attribute()?);
             c = self.advance()?;
         }
@@ -158,15 +163,21 @@ impl<'a> SAXParser<'a> {
         let att_name = self.read_until("=")?;
         self.skip_whitespace()?;
         self.expect("=", "Expected =")?;
-        self.expect("\"", "Expected start of attribute value")?;
+        self.skip_whitespace()?;
+        self.expect(
+            r#"""#,
+            &format!(
+                "Expected start of attribute value at line {}. Instead found [{}]",
+                self.current_line, self.current
+            ),
+        )?;
         let att_value = self.read_until("\"")?;
 
         if att_name.starts_with("xmlns:") {
             let prefix = att_name[6..].to_string();
             self.prefix_mapping
                 .insert(prefix.clone(), att_value.to_string());
-            self.handler
-                .start_prefix_mapping(&prefix, &att_value);
+            self.handler.start_prefix_mapping(&prefix, &att_value);
         }
 
         let namespace = if att_name == "xmlns" {
@@ -245,6 +256,10 @@ impl<'a> SAXParser<'a> {
         } else {
             '\0'
         };
+        // print!("{}", self.current);
+        if self.current == '\n' {
+            self.current_line += 1;
+        }
         Ok(self.current)
     }
 

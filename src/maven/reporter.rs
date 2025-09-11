@@ -3,7 +3,7 @@ use crate::maven::project::Project;
 use regex::Regex;
 use std::collections::HashSet;
 use std::fs::File;
-use std::io::{BufWriter, Read, Write};
+use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 use zip::ZipArchive;
@@ -11,6 +11,7 @@ use zip::ZipArchive;
 static CLASS_EXPR: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(.+)/.+\.class").unwrap());
 const MAVEN_CENTRAL: &str = "https://repo1.maven.org/maven2/";
 
+// TODO should not be downloading dependencies
 pub fn report(project: &Project) {
     let pom = &project.root;
     for dep in &project.get_dependencies(pom) {
@@ -52,14 +53,14 @@ fn download(dep: &Dependency) -> Result<(), String> {
     let url = format!("{}{}.jar", MAVEN_CENTRAL, dep);
 
     let client = Client::builder()
-        .timeout(std::time::Duration::from_secs(30)) // Ruime timeout instellen
+        .timeout(std::time::Duration::from_secs(30))
         .build()
         .map_err(|e| e.to_string())?;
 
     println!("Downloading {}", &url);
     let response = client
         .get(&url)
-        .header("User-Agent", "Maven/1.0") // Goede practice om een User-Agent te sturen
+        .header("User-Agent", "Maven/1.0")
         .send()
         .map_err(|e| e.to_string())?;
     if response.status().is_success() {

@@ -1,9 +1,11 @@
 use crate::maven::project::Project;
-use maud::{PreEscaped, html};
+use maud::{DOCTYPE, PreEscaped, html};
 
 impl Project {
     pub fn generate_dependency_html(&self) -> String {
         let html = html! {
+            (DOCTYPE)
+            html {
             (PreEscaped(r#"
                 <head>
                   <meta charset="UTF-8">
@@ -27,26 +29,29 @@ impl Project {
                     }
                   </style>
                 </head>
-"#))
-        h1{"Project Dependencies"}
-        table{
-            thead{
-                tr {
-                    th{"Group ID"}
-                    th{"Artifact ID"}
-                    th{"Version"}
-                }
-            }
-            tbody{
-                @for dependency in &self.get_dependencies(&self.root) {
-                    tr {
-                            td { (dependency.group_id) }
-                            td { (dependency.artifact_id) }
-                            td { (dependency.version.clone().unwrap()) }
+                "#))
+                body{
+                    h1{"Project Dependencies"}
+                    table{
+                        thead{
+                            tr {
+                                th{"Group ID"}
+                                th{"Artifact ID"}
+                                th{"Version"}
+                            }
                         }
+                        tbody{
+                            @for dependency in &self.get_dependencies(&self.root) {
+                                tr {
+                                        td { (dependency.group_id) }
+                                        td { (dependency.artifact_id) }
+                                        td { (dependency.version.clone().unwrap()) }
+                                    }
+                            }
+                        }
+                    }
                 }
             }
-        }
         };
         html.into_string()
     }

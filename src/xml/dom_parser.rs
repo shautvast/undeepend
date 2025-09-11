@@ -2,9 +2,9 @@ use crate::xml::sax_parser::parse_string;
 use crate::xml::{Attribute, SaxError, SaxHandler};
 
 /// get a generic XML object (Document) from the xml contents. This is called DOM parsing
-pub fn get_document(xml: &str) -> Result<Document, SaxError> {
+pub fn get_document(xml: impl Into<String>) -> Result<Document, SaxError> {
     let mut dom_hax_handler = DomSaxHandler::new();
-    parse_string(xml, Box::new(&mut dom_hax_handler))?;
+    parse_string(&xml.into(), Box::new(&mut dom_hax_handler))?;
 
     Ok(dom_hax_handler.into_doc())
 }

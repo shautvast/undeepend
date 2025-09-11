@@ -1,12 +1,8 @@
 use std::collections::HashMap;
-use std::env;
 use std::fmt::Display;
 use std::path::PathBuf;
-use std::sync::LazyLock;
 
 /// the maven object model
-
-const HOME: LazyLock<String> = LazyLock::new(|| env::var("HOME").unwrap());
 
 #[derive(PartialEq, Debug)]
 pub struct Pom {
@@ -80,13 +76,19 @@ impl Dependency {
 
 use std::fmt;
 
+use crate::maven::HOME;
+
 impl Display for Dependency {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let version = self.version.clone().unwrap_or_else(|| "latest".to_string());
         write!(
             f,
             "{}/{}/{}/{}-{}",
-            self.group_id.replace(".","/"), self.artifact_id, version, self.artifact_id, version
+            self.group_id.replace(".", "/"),
+            self.artifact_id,
+            version,
+            self.artifact_id,
+            version
         )
     }
 }
