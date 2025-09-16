@@ -1,4 +1,4 @@
-use crate::maven::pom::Dependency;
+use crate::maven::pom::{Dependency, Pom};
 use crate::maven::project::Project;
 use regex::Regex;
 use std::collections::HashSet;
@@ -13,11 +13,11 @@ const MAVEN_CENTRAL: &str = "https://repo1.maven.org/maven2/";
 
 // TODO should not be downloading dependencies
 pub fn report(project: &Project) {
-    let pom = &project.root;
+    let pom = &project.root; // TODO other modules
     for dep in &project.get_dependencies(pom) {
         let path = PathBuf::from(dep.to_absolute_jar_path());
         if !path.exists() {
-            download(dep).expect(&format!("Can't download jar file {}", dep));
+            download(&pom, dep).expect(&format!("Can't download jar file {}", dep));
         }
         let jar_file = File::open(dep.to_absolute_jar_path()).expect("Can't open jar file");
         let mut archive = ZipArchive::new(jar_file).expect("Can't read jar file");
@@ -33,22 +33,23 @@ pub fn report(project: &Project) {
             }
         }
 
-        let mut src_main_java = pom.directory.clone();
-        src_main_java.push("src/main/java"); //TODO other src directories
-
-        traverse(&packages, &src_main_java);
-
-        let mut src_test_java = pom.directory.clone();
-        src_test_java.push("src/test/java"); //TODO other src directories
-
-        traverse(&packages, &src_test_java);
+        analyse_source(&packages, &new_path(&pom.directory, "src/main/java"));
+        analyse_source(&packages, &new_path(&pom.directory, "src/test/java")); //TODO other src dirs, generated src
     }
+}
+
+fn new_path(dir: &PathBuf, child: &str) -> PathBuf {
+    let mut new_dir = dir.clone();
+    new_dir.push(child);
+    new_dir
 }
 
 use reqwest::blocking::Client;
 
-fn download(dep: &Dependency) -> Result<(), String> {
+fn download(pom: &Pom, dep: &Dependency) -> Result<(), String> {
     //TODO inspect settings.xml
+    // gather repositories
+    // pom.repositories
 
     let url = format!("{}{}.jar", MAVEN_CENTRAL, dep);
 
@@ -75,13 +76,13 @@ fn download(dep: &Dependency) -> Result<(), String> {
     Ok(())
 }
 
-fn traverse(packages: &HashSet<String>, dir: &Path) {
+fn analyse_source(packages: &HashSet<String>, dir: &Path) {
     if dir.exists() {
         for entry in dir.read_dir().unwrap() {
             let entry = entry.unwrap();
             let path = entry.path();
             if path.is_dir() {
-                traverse(packages, &path);
+                analyse_source(packages, &path);
             } else {
                 if path.extension().unwrap() == "java" {
                     analyse(packages, &path);

@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 /// the maven object model
 
-#[derive(PartialEq, Debug)]
+#[derive(Debug)]
 pub struct Pom {
     pub parent: Option<Parent>,
     pub group_id: Option<String>,
@@ -19,6 +19,7 @@ pub struct Pom {
     pub module_names: Vec<String>,
     pub modules: Vec<Pom>,
     pub directory: PathBuf,
+    pub repositories: Vec<Repository>,
 }
 
 impl Pom {}
@@ -72,11 +73,19 @@ impl Dependency {
         absolute_path.push(self.to_jar_path());
         absolute_path
     }
+
+    pub fn is_snapshot(&self) -> bool {
+        self.version
+            .as_ref()
+            .map(|v| v.ends_with("SNAPSHOT"))
+            .unwrap_or(false)
+    }
 }
 
 use std::fmt;
 
 use crate::maven::HOME;
+use crate::maven::common_model::Repository;
 
 impl Display for Dependency {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

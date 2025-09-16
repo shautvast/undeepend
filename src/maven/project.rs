@@ -1,5 +1,6 @@
 use crate::maven::pom::{Dependency, Pom};
 use crate::maven::pom_parser::get_pom;
+use crate::maven::settings::{Settings, get_settings};
 use regex::Regex;
 use std::fs;
 use std::path::Path;
@@ -29,9 +30,14 @@ pub fn parse_project(project_dir: &Path) -> Result<Project, String> {
     let mut root = get_pom(project_dir.to_path_buf(), pom_file).map_err(|e| e.to_string())?;
 
     resolve_modules(project_dir, &mut root);
-    let project_home = project_dir.to_str().unwrap_or_else(|| "?").to_string(); //TODO unwrap can fail??
+    let project_home = project_dir.to_str().unwrap_or_else(|| "?").to_string()
+    let settings = get_settings()?;
 
-    Ok(Project { project_home, root })
+    Ok(Project {
+        settings,
+        project_home,
+        root,
+    })
 }
 
 // examines modules in pom and loads them
@@ -63,12 +69,15 @@ fn read_module_pom(project_dir: &Path, module: &String) -> Pom {
 //the (root) pom holds the child references to modules
 #[derive(Debug)]
 pub struct Project {
+    pub settings: Settings,
     pub project_home: String,
     pub root: Pom,
 }
 
 impl Project {
     /// get a list of dependencies for a pom in the project
+    ///
+    /// Note to self: maybe calculating the versions should be done earlier
     pub fn get_dependencies(&self, pom: &Pom) -> Vec<Dependency> {
         pom.dependencies
             .iter()

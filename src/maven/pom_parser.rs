@@ -1,3 +1,4 @@
+use crate::maven::common_model::get_repositories;
 use crate::maven::pom::{Dependency, Developer, Parent, Pom};
 use crate::xml::SaxError;
 use crate::xml::dom_parser::{Node, get_document};
@@ -17,6 +18,7 @@ pub fn get_pom(home_dir: PathBuf, xml: impl Into<String>) -> Result<Pom, SaxErro
     let mut dependency_management = vec![];
     let mut properties = HashMap::new(); // useless assignments...
     let mut module_names = vec![]; // not useless assignment...
+    let mut repositories = vec![]; // not useless assignment...
 
     for child in get_document(xml.into().as_str())?.root.children {
         match child.name.as_str() {
@@ -31,9 +33,16 @@ pub fn get_pom(home_dir: PathBuf, xml: impl Into<String>) -> Result<Pom, SaxErro
             "dependencyManagement" => dependency_management = get_dependency_mgmt(child),
             "properties" => properties = get_properties(child),
             "modules" => add_modules(child, &mut module_names),
+            "repositories" => repositories = get_repositories(child),
             _ => {}
         }
     }
+
+    // TODO before returning, calculate all
+    // * dependency versions
+    // * repositories
+    // maybe put that in a separate model struct
+
     Ok(Pom {
         parent,
         group_id,
@@ -48,10 +57,11 @@ pub fn get_pom(home_dir: PathBuf, xml: impl Into<String>) -> Result<Pom, SaxErro
         module_names,
         modules: vec![],
         directory: home_dir,
+        repositories,
     })
 }
 
-fn add_modules(element: Node, modules: &mut Vec<String>){
+fn add_modules(element: Node, modules: &mut Vec<String>) {
     for module in element.children {
         modules.push(module.text.expect("Cannot read module name"));
     }
