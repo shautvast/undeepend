@@ -30,7 +30,7 @@ pub fn parse_project(project_dir: &Path) -> Result<Project, String> {
     let mut root = get_pom(project_dir.to_path_buf(), pom_file).map_err(|e| e.to_string())?;
 
     resolve_modules(project_dir, &mut root);
-    let project_home = project_dir.to_str().unwrap_or_else(|| "?").to_string()
+    let project_home = project_dir.to_str().unwrap_or_else(|| "?").to_string();
     let settings = get_settings()?;
 
     Ok(Project {
