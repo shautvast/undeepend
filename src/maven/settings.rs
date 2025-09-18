@@ -349,6 +349,41 @@ fn get_settings_path() -> Result<PathBuf, String> {
     Ok(settings)
 }
 
+impl Settings {
+    pub fn get_active_profiles(&self) -> Vec<&Profile> {
+        self.profiles
+            .iter()
+            .filter(|p| {
+                if let Some(activation) = &p.activation {
+                    activation.active_by_default //TODO other activation types are possible
+                } else if let Some(id) = &p.id {
+                    self.active_profiles.contains(id)
+                } else {
+                    false
+                }
+            })
+            .collect()
+    }
+
+    pub fn get_repositories(&self) -> Vec<Repository> {
+        self.get_active_profiles()
+            .iter()
+            .map(|p| &p.repositories)
+            .flatten()
+            .cloned()
+            .collect()
+    }
+
+    pub fn get_plugin_repositories(&self) -> Vec<Repository> {
+        self.get_active_profiles()
+            .iter()
+            .map(|p| &p.plugin_repositories)
+            .flatten()
+            .cloned()
+            .collect()
+    }
+}
+
 #[derive(Debug)]
 pub struct Settings {
     pub local_repository: Option<String>,

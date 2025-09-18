@@ -1,6 +1,6 @@
 use crate::xml::dom_parser::Node;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Repository {
     pub releases: Option<RepositoryPolicy>,
     pub snapshots: Option<RepositoryPolicy>,
@@ -10,7 +10,7 @@ pub struct Repository {
     pub layout: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RepositoryPolicy {
     pub enabled: bool,
     pub update_policy: Option<String>,

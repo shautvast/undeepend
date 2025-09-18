@@ -1,10 +1,16 @@
+use crate::maven::common_model::Repository;
 use crate::maven::pom::{Dependency, Pom};
 use crate::maven::pom_parser::get_pom;
 use crate::maven::settings::{Settings, get_settings};
 use regex::Regex;
+use reqwest::blocking::Client;
 use std::fs;
-use std::path::Path;
+use std::fs::File;
+use std::io::{BufWriter, Write};
+use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
+
+const MAVEN_CENTRAL: &str = "https://repo1.maven.org/maven2/";
 
 static PROPERTY_EXPR: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\$\{(.+)}").unwrap());
 
@@ -33,11 +39,27 @@ pub fn parse_project(project_dir: &Path) -> Result<Project, String> {
     let project_home = project_dir.to_str().unwrap_or_else(|| "?").to_string();
     let settings = get_settings()?;
 
-    Ok(Project {
+    let mut project = Project {
         settings,
         project_home,
         root,
-    })
+        repositories: vec![],
+    };
+
+    let repositories = project.get_repositories();
+    project.repositories = repositories; // well this is convoluted
+
+    for pom in &project.root.modules {
+        for dep in &project.get_dependencies(pom) {
+            let path = PathBuf::from(dep.to_absolute_jar_path());
+            if !path.exists() {
+                project
+                    .download(dep)
+                    .expect(&format!("Can't download jar file {}", dep));
+            }
+        }
+    }
+    Ok(project)
 }
 
 // examines modules in pom and loads them
@@ -72,6 +94,7 @@ pub struct Project {
     pub settings: Settings,
     pub project_home: String,
     pub root: Pom,
+    pub repositories: Vec<Repository>,
 }
 
 impl Project {
@@ -120,6 +143,55 @@ impl Project {
                     Some(v)
                 }
             })
+    }
+
+    fn download(&self, dep: &Dependency) -> Result<(), String> {
+        // self.repositories has all repos,
+        // but mirrors are not yet taken into account
+
+        let url = format!("{}{}.jar", MAVEN_CENTRAL, dep);
+
+        let client = Client::builder()
+            .timeout(std::time::Duration::from_secs(30))
+            .build()
+            .map_err(|e| e.to_string())?;
+
+        println!("Downloading {}", &url);
+        let response = client
+            .get(&url)
+            .header("User-Agent", "Maven/1.0")
+            .send()
+            .map_err(|e| e.to_string())?;
+        if response.status().is_success() {
+            let bytes = response.bytes().map_err(|e| e.to_string())?;
+            let mut buf_writer = BufWriter::new(
+                File::create(dep.to_absolute_jar_path()).map_err(|e| e.to_string())?,
+            );
+
+            buf_writer.write_all(&bytes).map_err(|e| e.to_string())?;
+            buf_writer.flush().map_err(|e| e.to_string())?;
+            println!("Downloaded {}", &url);
+        }
+        Ok(())
+    }
+
+    pub fn get_repositories(&self) -> Vec<Repository> {
+        let mut repositories = vec![];
+        for pom in &self.root.modules {
+            repositories.append(&mut pom.repositories.to_vec());
+        }
+        self.add_repositories(&self.root, &mut repositories);
+        repositories.append(&mut self.settings.get_repositories().to_vec());
+        repositories
+    }
+
+    fn add_repositories(&self, pom: &Pom, repositories: &mut Vec<Repository>) {
+        repositories.append(&mut pom.repositories.to_vec());
+        if let Some(parent) = &pom.parent {
+            if let Some(parent_pom) = self.get_pom(&parent.group_id, &parent.artifact_id) {
+                self.add_repositories(parent_pom, repositories);
+            }
+        }
     }
 
     // searches in managed_dependencies for dependencies
